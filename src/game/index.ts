@@ -33,6 +33,8 @@ export class Tradeoffs extends Game<Tradeoffs, TradeoffsPlayer> {
     handLimit: number = 10;
     poolSize: number = 20;
     strategyDrawCost: number = 4;
+    wincondition: number = 10;
+    losecondition: number = 10;
 }
 
 /**
@@ -193,98 +195,78 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     { player: player });
             }
         }),
+        stashCard: player => action({
+            prompt: 'Stash a challenge card',
+            condition: !player.stashedThisTurn,
+        }).chooseOnBoard(
+            'challengeCard', player.my('hand')!.all(ChallengeCard), // challengeDeck
+        ).move(
+            'challengeCard', $.discarded
+        ).do(({ challengeCard }) => {
+            player.resources -= 1;
+            player.score += 1;
+            player.stashedThisTurn = true;
+            game.message(`{{player}} stashed a card and increased their score by 1.`, { player: player });
+        }),
+
+        /**
+         * In the above I need to add some conditional logic to ensure players can take up to x moves/spend up to x resource each turn
+         * 
+         */
 
         // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
         // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
         // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
         // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
         // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
-
-         stashCard: player => action({
-         prompt: 'Stash a challenge card',
-         condition: !player.stashedThisTurn,
-     }).chooseOnBoard(
-         'challengeCard', player.my('challengeDeck')!.all(ChallengeCard), // challengeDeck
-     ).move(
-         'challengeCard', $.discarded
-     ).do(({ challengeCard }) => {
-         player.resources -= 1;
-         player.score += 1;
-         player.stashedThisTurn = true;
-         game.message(`{{player}} stashed a card and increased their score by 1.`, { player: player });
-     }),
-
-
-               /**
-     playInnovation: player => action({
-         prompt: 'Play an innovation token on a challenge card',
-     }).chooseOnBoard(
-         'token', player.my('pool')!.all(Token),
-     ).chooseOnBoard(
-         'challengeSpace', game.all(Space).filter(space => space.container instanceof Token && space.isEmpty()),
-     ).move(
-         'token', 'challengeSpace'
-     ).do(({ token, challengeSpace }) => {
-         if (player.resources >= token.quality && token.type === challengeSpace.name) {
-             player.resources -= token.quality;
-             game.message(`{{player}} played a {{token}} token on a challenge card.`,
-                 { player: player, token: token.type });
-         } else {
-             game.message(`{{player}} does not have enough resources or the space does not match the token type.`,
-                 { player: player });
-         }
-     }),
-                   */
-
         drawEvent: player => action({
             prompt: 'Draw an event card',
         }).chooseOnBoard(
             'card', $.eventDeck.all(EventCard),
-        ).move(
-            'card', player.my('hand')!
         ).message(
-            `An event occurred.`
+            `An event occurred....`
         ).do(({ card }) => {
+            /** Here I need:
+             * A conditional to check what's on the board (if there are no tokens)
+             * Variables to check (1) the current resource values on each tokenslot, (2) modified by the current strategies in play
+             * Then check that value (for each slot) against the event requirements
+             * If the requirements are met, the player proceeds to the nxt round
+             * If the requirements are not met, the player must either:
+             *  1. Discard resources placed on any impacted challenge cards,
+             *  adding these to the wastedResource space
+             *  2. Choose to 'mitigate' by playing ONE stratey card or ONE resource if it would mitigate the event impact
+             * adding one unused resource to the wastedResource space
+             * and then immediately drawing a new event card (a full turn is not played, the round marker does not increase)
+             * The drawEvent action then repeats.
+             * 
+             * The options available could probably be made available via the existing actions and adding conditions to those.
+             * 
+             * */
         }),
 
-        evaluateChallenge: player => action({
-            prompt: 'Evaluate challenge',
-        }).do(() => {
 
-        }),
 
-        evaluateEvent: player => action({
-            prompt: 'Evaluate the event',
-        }).do(() => {
 
-        }),
-
-        mitigate: player => action({
-            prompt: 'Mitigate the event',
-        }).chooseFrom(
-            'action', ['playInnovation', 'playStrategyCard'],
-        ),
-        proceed: player => action({
-            prompt: 'Proceed to the next round',
-        }).do(() => {
-            player.stashedThisTurn = false;
-            game.message(`{{player}} proceeds to the next round.`);
-        }),
-
-        checkConditions: player => action({
-            prompt: 'Check win/lose conditions',
-        }).do(() => {
-            const wastedTokens = player.my('wastedResource')!.all(Token).length;
-            const poolTokens = player.my('pool')!.all(Token).length;
-
-            if (player.score >= 10) {
-                game.message(`{{player}} wins the game!`);
-                Do.break('mainLoop');
-            } else if (wastedTokens >= 10 || poolTokens < 4) {
-                game.message(`{{player}} loses the game!`);
-                Do.break('mainLoop');
-            }
-        })
+               /**
+         playInnovation: player => action({
+             prompt: 'Play an innovation token on a challenge card',
+         }).chooseOnBoard(
+             'token', player.my('pool')!.all(Token),
+         ).chooseOnBoard(
+             'challengeSpace', game.all(Space).filter(space => space.container instanceof Token && space.isEmpty()),
+         ).move(
+             'token', 'challengeSpace'
+         ).do(({ token, challengeSpace }) => {
+             if (player.resources >= token.quality && token.type === challengeSpace.name) {
+                 player.resources -= token.quality;
+                 game.message(`{{player}} played a {{token}} token on a challenge card.`,
+                     { player: player, token: token.type });
+             } else {
+                 game.message(`{{player}} does not have enough resources or the space does not match the token type.`,
+                     { player: player });
+             }
+         }),
+                   */
     });
 
     // Define game flow
@@ -306,6 +288,11 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     // I think this has worked...
                    $.challengeDeck.firstN(1, ChallengeCard).putInto($.slot0!); //challengeSpace.challengeSlots.slot0
                 },
+                // Give players some extra challenges to look at
+                ({ player }) => {
+                    // I think this has worked...
+                    $.challengeDeck.firstN(3, ChallengeCard).putInto(player.my('hand')!); 
+                },
                 // Put all the other challenge cards into the deck
                 ({ player }) => {
                     // I think this has worked...
@@ -320,7 +307,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         eachPlayer({
             name: 'turnphase',
             do: playerActions({
-                actions: ['drawStrategyCard', 'playStrategyCard','addChallengeCard'] //'playInnovation', 'stashCard',
+                actions: ['drawStrategyCard', 'playStrategyCard', 'addChallengeCard', 'stashCard'] //'playInnovation'
             }),
         }),
         eachPlayer({
@@ -329,6 +316,28 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 actions: ['drawEvent']
             }),
         })
+
+
+        /**
+               checkConditions: player => action({
+                   prompt: 'Check win/lose conditions',
+               }).do(() => {
+                   const wastedTokens = player.my('wastedResource')!.all(Token).length;
+                   const poolTokens = player.my('pool')!.all(Token).length;
+
+                   if (player.score >= game.wincondition) {
+                       game.message(`{{player}} wins the game!`, { player: player });
+                       Do.break('mainLoop');
+                   } else if (wastedTokens >= game.losecondition || poolTokens < 4) {
+                       game.message(`{{player}} loses the game!`, { player: player });
+                       Do.break('mainLoop');
+                   } else if (game.round < 6) {
+                       game.message(`{{player}} proceeds to the next round.`, { player: player });
+                       game.round += 1;
+                       Do.returnTo('turnphase');
+                   }
+               })
+        */
         // Main game loop
         // Each round, players will:
         // 1. Decide whether to add a challenge card (for free)
