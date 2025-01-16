@@ -276,6 +276,11 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         // place initial challenge card, set round marker
         // ensure there is a challenge card in the first slot
         // ensure player has token pool
+        () => {
+            $.strategyDeck.shuffle();
+            $.challengeDeck.shuffle();
+            //game.announce('intro');
+        },
         eachPlayer({
             name: 'player',
             do: [
@@ -304,8 +309,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 }
             ]
         }),
+
         eachPlayer({
-            name: 'turnphase',
+            name: 'playerinturnphase',
+            continueUntil: () => game.players.current()!.resources <=0,
             do: playerActions({
                 actions: ['drawStrategyCard', 'playStrategyCard', 'addChallengeCard', 'stashCard'] //'playInnovation'
             }),
