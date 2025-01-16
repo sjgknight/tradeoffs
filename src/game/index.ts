@@ -39,7 +39,7 @@ export class Tradeoffs extends Game<Tradeoffs, TradeoffsPlayer> {
  * Define your game's custom pieces.
  * note you cant import * from x in js, so don't try.
  */
-import { Token, ScoreCounter } from './pieces/index.ts';
+import { Token, ScoreCounter, Slot } from './pieces/index.ts';
 import { challengeCards, ChallengeCard } from './pieces/challenges.ts';
 import { strategyCards, StrategyCard } from './pieces/strategies.ts';
 import { eventCards, EventCard } from './pieces/events.ts';
@@ -71,10 +71,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
         const challengeSlots = challengeSpace.create(Space, 'challengeSlots', { player });
         for (let i = 0; i < 3; i++) {
-            const slot = challengeSlots.create(Space, `slot${i}`);
+            const slot = challengeSlots.create(Slot, `slot${i}`, {group: 'challengeslot'});
             const tokenSpace = slot.create(Space, 'tokenSpace');
             ['Data', 'Method', 'User', 'Aim'].forEach(type => {
-                tokenSpace.create(Token, `token${type}${i}`, { type: type as 'Data' | 'Method' | 'User' | 'Aim', quality: 1 });
+                tokenSpace.create(Token, `token${type}`, { type: type as 'Data' | 'Method' | 'User' | 'Aim', quality: 1 });
             });
         }
 
@@ -137,7 +137,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     { player: player, drawcost: game.strategyDrawCost });
             } else {
                 game.message(`{{player}} does not have enough resources ({{myresource}}, {{drawcost}} needed) to draw a strategy card.`,
-                    { player: player, drawcost: game.strategyDrawCost, myresource: player.resources }); 
+                    { player: player, drawcost: game.strategyDrawCost, myresource: player.resources });
             }
         }),
 
@@ -146,11 +146,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             prompt: 'Play a strategy card',
         }).chooseOnBoard(
             'strategyCard', player.my('hand')!.all(StrategyCard),
-        ).move(
-            'strategyCard', $.discarded
         ).do(({ strategyCard }) => {
             if (player.resources >= strategyCard.cost) {
                 player.resources -= strategyCard.cost;
+                strategyCard.putInto($.activeStrategies); // why is this putInto but not move
                 //strategyCard.effect(game);
                 game.message(`{{player}} played a strategy card, resource is now {{myresource}}.`,
                     { player: player, myresource: player.resources });
@@ -159,57 +158,83 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     { player: player, myresource: player.resources });
             }
         }),
-
-        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
-        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
-        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
-        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
-        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
-
-        playInnovation: player => action({
-            prompt: 'Play an innovation token on a challenge card',
-        }).chooseOnBoard(
-            'token', player.my('pool')!.all(Token),
-        ).chooseOnBoard(
-            'challengeSpace', game.all(Space).filter(space => space.container instanceof Token && space.isEmpty()),
-        ).move(
-            'token', 'challengeSpace'
-        ).do(({ token, challengeSpace }) => {
-            if (player.resources >= token.quality && token.type === challengeSpace.name) {
-                player.resources -= token.quality;
-                game.message(`{{player}} played a {{token}} token on a challenge card.`,
-                    { player: player, token: token.type });
-            } else {
-                game.message(`{{player}} does not have enough resources or the space does not match the token type.`,
-                    { player: player });
-            }
-        }),
-        stashCard: player => action({
-            prompt: 'Stash a challenge card',
-            condition: !player.stashedThisTurn,
-        }).chooseOnBoard(
-            'challengeCard', player.allMy('challengeDeck')!,
-        ).move(
-            'challengeCard', $.discarded
-        ).do(({ challengeCard }) => {
-            player.resources -= 1;
-            player.score += 1;
-            player.stashedThisTurn = true;
-            game.message(`{{player}} stashed a card and increased their score by 1.`, { player: player });
-        }),
-
         addChallengeCard: player => action({
             prompt: 'Add a challenge card to an available slot',
         }).chooseOnBoard(
-            'challengeSlot', $.challengeSpace.all(Space).filter(space => space.isEmpty())
-        ).chooseOnBoard(
-            'card', $.challengeDeck.all(ChallengeCard),
-        ).move(
-            'card', 'challengeSlot'
-        ).message(
-            `{{player}} placed a new challenge card.`
-        ),
+            'challengeCard', $.challengeDeck.all(ChallengeCard),
+        ).do(({ challengeCard }) => {
+            //'challengeSlot', () => $.challengeSpace.all(Space).filter(space => space.isEmpty())
+            //() => $.challengeSpace.challengeSlots.all, empty: true, mine: true,
+            //player.my('challengeSpace')!.first(Space, 'challengeSlots')!.all(Space).filter(space => space.isEmpty())
+            //const allSlots = $.slot.all({ mine: true });
+            //const allSlots = $.challengeSlots.all().filter(slot => container(slot) === challengeSlots);
+            //const allSlots = container($.challengeSlots);
+            //const allSlots = $.challengeSlots.all({ mine: true });
+            //const allSlots = challengeSlots.all({ mine: true });
+            //const emptySlots3 = emptySlots2.filter(space => space.group === 'challengeslot' );
+            //const emptySlots = $.all({ type: $.slot, empty: true, mine: true });
+            //const emptySlots = $.challengeSpace.all('challengeSlots', { empty: true, mine: true});
+            //
+            //const emptySlotCount = emptySlots.length;
 
+            const allSlots = player.allMy(Slot, { group: 'challengeslot' });
+            const emptySlots = allSlots.filter(slot => !slot.has(ChallengeCard));
+            console.log('All Challenge Slots:', emptySlots);
+
+            if (emptySlots.length > 0) {
+                // find the  empty challengeSlot and place the item
+                const freeSlot = emptySlots.first()!;
+                //console.log('free Slots:', freeSlot);
+                //console.log('slots now', player.allMy(Slot, { group: 'challengeslot' }));
+                challengeCard.putInto(freeSlot)!; //emptySlots[0]); //$.slot1); 
+                game.message(`{{player}} placed a new challenge card.`, { player: player });
+            } else {
+                game.message(`{{player}} does not have any empty slots to place this challenge`,
+                    { player: player });
+            }
+        }),
+
+        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
+        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
+        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
+        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
+        // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
+
+         stashCard: player => action({
+         prompt: 'Stash a challenge card',
+         condition: !player.stashedThisTurn,
+     }).chooseOnBoard(
+         'challengeCard', player.my('challengeDeck')!.all(ChallengeCard), // challengeDeck
+     ).move(
+         'challengeCard', $.discarded
+     ).do(({ challengeCard }) => {
+         player.resources -= 1;
+         player.score += 1;
+         player.stashedThisTurn = true;
+         game.message(`{{player}} stashed a card and increased their score by 1.`, { player: player });
+     }),
+
+
+               /**
+     playInnovation: player => action({
+         prompt: 'Play an innovation token on a challenge card',
+     }).chooseOnBoard(
+         'token', player.my('pool')!.all(Token),
+     ).chooseOnBoard(
+         'challengeSpace', game.all(Space).filter(space => space.container instanceof Token && space.isEmpty()),
+     ).move(
+         'token', 'challengeSpace'
+     ).do(({ token, challengeSpace }) => {
+         if (player.resources >= token.quality && token.type === challengeSpace.name) {
+             player.resources -= token.quality;
+             game.message(`{{player}} played a {{token}} token on a challenge card.`,
+                 { player: player, token: token.type });
+         } else {
+             game.message(`{{player}} does not have enough resources or the space does not match the token type.`,
+                 { player: player });
+         }
+     }),
+                   */
 
         drawEvent: player => action({
             prompt: 'Draw an event card',
@@ -281,6 +306,11 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     // I think this has worked...
                    $.challengeDeck.firstN(1, ChallengeCard).putInto($.slot0!); //challengeSpace.challengeSlots.slot0
                 },
+                // Put all the other challenge cards into the deck
+                ({ player }) => {
+                    // I think this has worked...
+                    $.challengeDeck.firstN(5, ChallengeCard).putInto(player.my('hand')!); //challengeSpace.challengeSlots.slot0
+                },
                 // Set the round marker to an initial state of 1
                 () => {
                     game.round = 1;
@@ -290,7 +320,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         eachPlayer({
             name: 'turnphase',
             do: playerActions({
-                actions: ['addChallengeCard', 'drawStrategyCard', 'playInnovation', 'stashCard', 'playStrategyCard']
+                actions: ['drawStrategyCard', 'playStrategyCard','addChallengeCard'] //'playInnovation', 'stashCard',
             }),
         }),
         eachPlayer({

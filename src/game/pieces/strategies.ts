@@ -235,5 +235,19 @@ export const strategyCards: Partial<StrategyCard>[] = [
                 { principle: 'principle5', contribution: 2 }
             ]
         }
+    },
+    {
+        name: 'Somethin expensive',
+        type: 'regulate',
+        cost: 18,
+        value: {
+            principles: [
+                { principle: 'principle1', contribution: 2 },
+                { principle: 'principle2', contribution: 0 },
+                { principle: 'principle3', contribution: 3 },
+                { principle: 'principle4', contribution: 2 },
+                { principle: 'principle5', contribution: 2 }
+            ]
+        }
     }
 ];

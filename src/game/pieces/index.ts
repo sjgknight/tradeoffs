@@ -1,4 +1,4 @@
-import { Piece } from '@boardzilla/core';
+import { Piece, Space } from '@boardzilla/core';
 import { Tradeoffs } from '../index.ts';
 
 export class Token extends Piece<Tradeoffs> {
@@ -10,5 +10,10 @@ export class Token extends Piece<Tradeoffs> {
 
 export class ScoreCounter extends Piece<Tradeoffs> {
     value: number; // 1-10
+}
+
+export class Slot extends Space<Tradeoffs> {
+    type: 'slot'; // this is just so I can refer to them easily
+    group: 'challengeslot' | 'strategyslot';
 }
 
