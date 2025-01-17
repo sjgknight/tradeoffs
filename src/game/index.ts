@@ -1,3 +1,10 @@
+/**
+ * TO DO
+ * 1. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
+ * 2. visual design
+ * 3. 
+ */
+
 import {
     createGame,
     Player,
@@ -15,13 +22,13 @@ export class TradeoffsPlayer extends Player<Tradeoffs, TradeoffsPlayer> {
      * Any properties of your players that are specific to your game go here
      * Not clear at this point how the player vs game def differs.
      * These are properties for each player (e.g., a score, a set resource value, etc).
+     * Possibly if you have character types they'd go here.
      * The game class provides shared properties such as the round we're on.
      */
     score: number = 0;
-    resources: number = 15;
+    resources: number = 3;
     stashedThisTurn: boolean = false;
     damage: number = 0; //used to store wastedresource
-
 }
 
 export class Tradeoffs extends Game<Tradeoffs, TradeoffsPlayer> {
@@ -29,6 +36,7 @@ export class Tradeoffs extends Game<Tradeoffs, TradeoffsPlayer> {
      * Any overall properties of your game go here
      */
     round: number = 0;
+    maxRounds: number = 6;
     turnLimit: number = 3;
     handLimit: number = 10;
     poolSize: number = 20;
@@ -50,7 +58,7 @@ import { eventCards, EventCard } from './pieces/events.ts';
  * Create custom spaces for the board
  */
 export default createGame(TradeoffsPlayer, Tradeoffs, game => {
-    // I'm not clear what's needed in these first two, or what they're doing.
+    // I'm not clear what's needed in these first two, or what they're doing/why they can't be set default.
     const { action } = game;
     const {
         playerActions,
@@ -76,9 +84,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             const slot = challengeSlots.create(Slot, `slot${i}`, {group: 'challengeslot'});
             const tokenSpace = slot.create(Space, 'tokenSpace');
             ['Data', 'Method', 'User', 'Aim'].forEach(type => {
-                tokenSpace.create(Token, `token${type}`, { type: type as 'Data' | 'Method' | 'User' | 'Aim', quality: 1 });
+                tokenSpace.create(Token, `token${type}`, { type: type as 'Data' | 'Method' | 'User' | 'Aim'});
             });
         }
+
 
         // setup space to hold completed challenge cards (may not be needed)
         const challengeCompleted = game.create(Space, 'challengeCompleted', { player });
@@ -86,9 +95,14 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         // setup space to hold strategies that are in play
         const activeStrategies = game.create(Space, 'activeStrategies', { player });
 
-        // setup player hand (to hold cards), and pool (for tokens)
+        // setup player hand (to hold cards)
         const hand = game.create(Space, 'hand', { player });
+
+        // pool (for tokens), and create the tokens
         const pool = game.create(Space, 'pool', { player });
+        ['Data', 'Method', 'User', 'Aim'].forEach(type => {
+            pool.create(Token, `token${type}`, { type: type as 'Data' | 'Method' | 'User' | 'Aim', quality: 1 });
+        });
 
         // setup space to track the score using the scoringtoken piece,
         // to track wastedResource damage using the damage piece 
@@ -181,7 +195,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
             const allSlots = player.allMy(Slot, { group: 'challengeslot' });
             const emptySlots = allSlots.filter(slot => !slot.has(ChallengeCard));
-            console.log('All Challenge Slots:', emptySlots);
+            //console.log('All Challenge Slots:', emptySlots);
 
             if (emptySlots.length > 0) {
                 // find the  empty challengeSlot and place the item
@@ -219,6 +233,25 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
         // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
         // FUNCTIONS CHECKED AND FUNCTIONAL(ish) ABOVE THIS LINE
+        //const allSlots = player.allMy(Slot, { group: 'challengeslot' });
+        //const emptySlots = allSlots.filter(slot => !slot.has(ChallengeCard));
+
+        /** for the drawEvent and check I need:
+         * A conditional to check what's on the board (if there are no tokens)
+         * Variables to check (1) the current resource values on each tokenslot, (2) modified by the current strategies in play
+         * Then check that value (for each slot) against the event requirements
+         * If the requirements are met, the player proceeds to the nxt round
+         * If the requirements are not met, the player must either:
+         *  1. Discard resources placed on any impacted challenge cards,
+         *  adding these to the wastedResource space
+         *  2. Choose to 'mitigate' by playing ONE stratey card or ONE resource if it would mitigate the event impact
+         * adding one unused resource to the wastedResource space
+         * and then immediately drawing a new event card (a full turn is not played, the round marker does not increase)
+         * The drawEvent action then repeats.
+         * 
+         * The options available could probably be made available via the existing actions and adding conditions to those.
+         * 
+         * */
         drawEvent: player => action({
             prompt: 'Draw an event card',
         }).chooseOnBoard(
@@ -226,25 +259,113 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         ).message(
             `An event occurred....`
         ).do(({ card }) => {
-            /** Here I need:
-             * A conditional to check what's on the board (if there are no tokens)
-             * Variables to check (1) the current resource values on each tokenslot, (2) modified by the current strategies in play
-             * Then check that value (for each slot) against the event requirements
-             * If the requirements are met, the player proceeds to the nxt round
-             * If the requirements are not met, the player must either:
-             *  1. Discard resources placed on any impacted challenge cards,
-             *  adding these to the wastedResource space
-             *  2. Choose to 'mitigate' by playing ONE stratey card or ONE resource if it would mitigate the event impact
-             * adding one unused resource to the wastedResource space
-             * and then immediately drawing a new event card (a full turn is not played, the round marker does not increase)
-             * The drawEvent action then repeats.
-             * 
-             * The options available could probably be made available via the existing actions and adding conditions to those.
-             * 
-             * */
+
+            interface PrincipleData {
+                principle: string | number;
+                eventValue: number;
+                challengeValue: number | null;
+                strategyValue: number;
+                tokenValue: number;
+            }
+
+            const principlesData: PrincipleData[] = [
+                { principle: 1, eventValue: 0, challengeValue: 0, strategyValue: 0, tokenValue: 0 },
+                { principle: 2, eventValue: 0, challengeValue: 0, strategyValue: 0, tokenValue: 0 },
+                { principle: 3, eventValue: 0, challengeValue: 0, strategyValue: 0, tokenValue: 0 },
+                { principle: 4, eventValue: 0, challengeValue: 0, strategyValue: 0, tokenValue: 0 },
+                { principle: 5, eventValue: 0, challengeValue: 0, strategyValue: 0, tokenValue: 0 },
+            ];
+
+
+            const activestrategies = player.my('activeStrategies')!.all(StrategyCard); //container(activeStrategies!);
+            // console.log('All strats:', activestrategies);
+
+            // Get the values from the event card
+            card.impact?.forEach(impact => {
+                const principleData = principlesData.find(p => p.principle === impact.principle);
+                if (principleData) {
+                    principleData.eventValue += impact.value || 0;
+                };
+            });
+
+            // Aggregate values from the active strategies
+            if (activestrategies.length > 0) {
+                activestrategies.forEach(strategy => {
+                    strategy.contribution?.principles.forEach(principle => {
+                        const principleData = principlesData.find(p => p.principle === principle.principle);
+                        if (principleData) {
+                            principleData.strategyValue += principle.value || 0;
+                        }
+                    });
+                });
+            };
+
+            // Then I want to check each challenge card to:
+            // 1. See whether the card requirements relate to the -impact of the event
+            // 2. For TRUE, check whether the current strategy cards exceed the impact of the event
+            // 3. For FALSE, check whether the card has any resource tokens placed on it
+            // 4. For TRUE, check whether those resource token values exceed the impact of the event
+            // 5. For FALSE, move the resource tokens to the wastedResource space
+            const activechallenges = player.my('challengeSlots')!.all(ChallengeCard); 
+            //console.log('activechallenge:', activechallenges);
+
+            activechallenges.forEach(challenge => {
+
+                // Get the requirements for that card
+                challenge.requirements?.principles.forEach(principle => {
+                    const principleData = principlesData.find(p => p.principle === principle.principle);
+                    if (principleData) {
+                        principleData.challengeValue = principle.value || 0;
+                    };
+                });
+
+
+                console.log('overview:', principlesData);
+
+                // Check whether this event matches the requirements of the challenge
+                const matchingPrinciples = principlesData.filter(row =>
+                    row.eventValue < 0 &&
+                    row.challengeValue != null && 
+                    row.challengeValue > 0);
+
+                console.log('principle match:', matchingPrinciples);
+
+
+                // If match, check whether the event exceeds the activestrategies in play for the challenges
+                if (matchingPrinciples.length > 0) {
+                    const failTest = matchingPrinciples.filter(row => (row.eventValue + row.strategyValue) < 0);
+                    const passTest = matchingPrinciples.filter(row => (row.eventValue + row.strategyValue) >= 0 );
+
+                    if (failTest.length > 0) {
+
+                        // Get the token values for each challenge
+
+                        const allSlots = player.allMy(Slot, { group: 'challengeslot' });
+                        const riskedSlots = allSlots.filter(slot => slot.has(challenge));
+                        const riskedTokens = riskedSlots.all(Token);
+                        const tokenSum = riskedTokens.sum(token => token.quality);
+
+                        console.log('Token Sum:', tokenSum);
+                        console.log('Token risk:', riskedTokens);
+                        console.log('Token slots:', riskedSlots);
+                        // Check what will be removed and store
+
+
+                        // Then check with the user what they want to do, mitigate or accept and enact
+                        // 5. For FALSE, move the resource tokens to the wastedResource space
+
+                        riskedTokens.putInto(player.my('wastedresource')!); 
+
+                        // challenge.resources.forEach(resource => {
+                       //     resource.move($.wastedResource);
+                        //});
+                        //challenge.resources = []; // Clear the tokens from the challenge card
+                        //game.message(`Resource tokens from '${challenge.name}' moved to the wastedResource space.`);
+
+                    }
+                }
+            });
         }),
-
-
 
 
                /**
@@ -312,7 +433,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
         eachPlayer({
             name: 'playerinturnphase',
-            continueUntil: () => game.players.current()!.resources <=0,
+            continueUntil: () => game.players.current()!.resources <=0, // so why set the name 'playerinturnphase'? Can it be referred to?
             do: playerActions({
                 actions: ['drawStrategyCard', 'playStrategyCard', 'addChallengeCard', 'stashCard'] //'playInnovation'
             }),
@@ -326,6 +447,32 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
 
         /**
+         *            
+         *   checkConditions: Eachplayer({
+         *      name: 'checkingplayer',
+         *  continueUntil: () => game.round <= game.maxRounds, 
+         *     do: [
+         *      
+         *      ]
+         *  
+                   prompt: 'Check win/lose conditions',
+               }).do(() => {
+                   const wastedTokens = player.my('wastedResource')!.all(Token).length;
+                   const poolTokens = player.my('pool')!.all(Token).length;
+
+                   if (player.score >= game.wincondition) {
+                       game.message(`{{player}} wins the game!`, { player: player });
+                       Do.break('mainLoop');
+                   } else if (wastedTokens >= game.losecondition || poolTokens < 4) {
+                       game.message(`{{player}} loses the game!`, { player: player });
+                       Do.break('mainLoop');
+                   } else if (game.round < 6) {
+                       game.message(`{{player}} proceeds to the next round.`, { player: player });
+                       game.round += 1;
+                       Do.returnTo('turnphase');
+                   }
+               })
+         * 
                checkConditions: player => action({
                    prompt: 'Check win/lose conditions',
                }).do(() => {

@@ -9,7 +9,7 @@ export class ChallengeCard extends Piece<Tradeoffs> {
     is_complete: boolean;
     requirements: {
         blocks: number;
-        principles: { principle?: string; count?: number }[];
+        principles: { principle?: string | number; value?: number; name: string }[];
     };  
 }
 
@@ -22,9 +22,9 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "long-range" },
-                { principle: "respect for persons" },
-                { principle: "merit and integrity" }
+                { principle: 1, value: 1, name: "long-range" },
+                { principle: 2, value: 1, name: "respect for persons" },
+                { principle: 5, value: 1, name: "merit and integrity" }
             ]
         }
     },
@@ -36,8 +36,8 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "justice", count: 2 },
-                { principle: "respect for persons" }
+                { principle: 4, name: "justice", value: 2 },
+                { principle: 2, value: 1, name: "respect for persons" }
             ]
         }
     },
@@ -49,9 +49,9 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "merit and integrity" },
-                { principle: "respect for persons" },
-                { principle: "beneficience" }
+                { principle: 5, value: 1, name: "merit and integrity" },
+                { principle: 2, value: 1, name: "respect for persons" },
+                { principle: 3, value: 1, name: "beneficience" }
             ]
         }
     },
@@ -63,8 +63,8 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "merit and integrity", count: 2 },
-                { principle: "justice" }
+                { principle: 5, name: "merit and integrity", value: 2 },
+                { principle: 4, value: 1, name: "justice" }
             ]
         }
     },
@@ -76,8 +76,8 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "respect for persons" },
-                { principle: "justice", count: 2 }
+                { principle: 2, value: 1, name: "respect for persons" },
+                { principle: 4, name: "justice", value: 2 }
             ]
         }
     },
@@ -89,8 +89,8 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "merit and integrity", count: 2 },
-                { principle: "respect for persons" }
+                { principle: 5, name: "merit and integrity", value: 2 },
+                { principle: 2, value: 1, name: "respect for persons" }
             ]
         }
     },
@@ -112,8 +112,8 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "respect for persons" },
-                { principle: "justice", count: 2 }
+                { principle: 2, value: 1, name: "respect for persons" },
+                { principle: 4, name: "justice", value: 2 }
             ]
         }
     },
@@ -125,8 +125,8 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "respect for persons" },
-                { principle: "merit and integrity" }
+                { principle: 2, value: 1, name: "respect for persons" },
+                { principle: 5, value: 1, name: "merit and integrity" }
             ]
         }
     },
@@ -138,8 +138,8 @@ export const challengeCards: Partial<ChallengeCard>[] = [
         requirements: {
             blocks: 1,
             principles: [
-                { principle: "beneficience", count: 2 },
-                { principle: "merit and integrity" }
+                { principle: 3, name: "beneficience", value: 2 },
+                { principle: 5, value: 1, name: "merit and integrity" }
             ]
         }
     },
