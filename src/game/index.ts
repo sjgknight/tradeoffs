@@ -3,6 +3,14 @@
  * 1. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
  * 2. visual design
  * 3.Deal with wildcard strategies (999 value)
+ * 
+ * Lines:
+424-434 re: tokens
+399 re: usefulSlot definition
+
+Ideally i'd work out how to ensure tokens can only be placed on matching type spaces. 
+
+ * 
  */
 
 import {
@@ -395,7 +403,9 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 const usefulTokens = player.my('pool')!.all(Token).filter(tok => tok.quality >= Math.abs(worstImpact));
 
                 // Check that the token slots on the failing challenge cards match the usefulTokens.type
+                // how to get which slots. ARGH.  Others? Or parent of them? 
                 const usefulSlots = activechallenges.all('tokenSpace').filter(slot => !slot.has(Token) && usefulTokens.some(token => token.type === slot.name));
+
 
                 console.log('usefulslots', usefulSlots)
 
@@ -418,8 +428,20 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                             game.message(`{{player}} played and discarded strategy card to mitigate the impact.`, {player: player});
                         });
                     } else if (options === 'token') {
+                        // Prompt the user to choose a token
+      //                  action({
+      //                      prompt: 'Choose a token to play',
+      //                  }).chooseOnBoard('chosenToken', usefulTokens).move('chosenToken', usefulSlots.first('tokenSpace'));
+//
 
-                        // CONTENT HERE
+      //                  do (({ chosenToken }) => {
+                            // Add the placePiece action
+      //                      action({
+     //                           prompt: 'Place your token',
+      //                      }).placePiece(chosenToken, usefulSlots);
+      //                  });
+
+
 
 
                     } else if (options === 'accept') {
