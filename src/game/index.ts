@@ -2,7 +2,7 @@
  * TO DO
  * 1. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
  * 2. visual design
- * 3. 
+ * 3.Deal with wildcard strategies (999 value)
  */
 
 import {
@@ -81,13 +81,12 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
         const challengeSlots = challengeSpace.create(Space, 'challengeSlots', { player });
         for (let i = 0; i < 3; i++) {
-            const slot = challengeSlots.create(Slot, `slot${i}`, {group: 'challengeslot'});
+            const slot = challengeSlots.create(Slot, `slot${i}`, { group: 'challengeslot' });
             const tokenSpace = slot.create(Space, 'tokenSpace');
             ['Data', 'Method', 'User', 'Aim'].forEach(type => {
-                tokenSpace.create(Token, `token${type}`, { type: type as 'Data' | 'Method' | 'User' | 'Aim'});
+                tokenSpace.create(Space, `${type}`);
             });
         }
-
 
         // setup space to hold completed challenge cards (may not be needed)
         const challengeCompleted = game.create(Space, 'challengeCompleted', { player });
@@ -100,9 +99,14 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
         // pool (for tokens), and create the tokens
         const pool = game.create(Space, 'pool', { player });
-        ['Data', 'Method', 'User', 'Aim'].forEach(type => {
-            pool.create(Token, `token${type}`, { type: type as 'Data' | 'Method' | 'User' | 'Aim', quality: 1 });
-        });
+        const tokenTypes: ('Data' | 'Method' | 'User' | 'Aim')[] = ['Data', 'Method', 'User', 'Aim'];
+
+        for (let i = 0; i < game.poolSize; i++) {
+            const type = tokenTypes[i % tokenTypes.length];
+            const quality = Math.floor(Math.random() * 3) + 1; // randomly assign quality, 1,2,3
+            pool.create(Token, `token${type}`, { type: type, quality: quality });
+        }
+ 
 
         // setup space to track the score using the scoringtoken piece,
         // to track wastedResource damage using the damage piece 
@@ -261,7 +265,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         ).do(({ card }) => {
 
             interface PrincipleData {
-                principle: string | number;
+                principle: string | number | undefined;
                 eventValue: number;
                 challengeValue: number | null;
                 strategyValue: number;
@@ -306,7 +310,17 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             // 3. For FALSE, check whether the card has any resource tokens placed on it
             // 4. For TRUE, check whether those resource token values exceed the impact of the event
             // 5. For FALSE, move the resource tokens to the wastedResource space
-            const activechallenges = player.my('challengeSlots')!.all(ChallengeCard); 
+
+            // Create an array to store the results
+            interface Result {
+                challenge: ChallengeCard;
+                failTest: PrincipleData[];
+                tokenSum: number;
+                riskedTokens: Token[];
+            }
+            const results: Result[] = [];
+
+            const activechallenges = player.my('challengeSlots')!.all(ChallengeCard);
             //console.log('activechallenge:', activechallenges);
 
             activechallenges.forEach(challenge => {
@@ -319,22 +333,16 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     };
                 });
 
-
-                console.log('overview:', principlesData);
-
                 // Check whether this event matches the requirements of the challenge
                 const matchingPrinciples = principlesData.filter(row =>
                     row.eventValue < 0 &&
-                    row.challengeValue != null && 
+                    row.challengeValue != null &&
                     row.challengeValue > 0);
-
-                console.log('principle match:', matchingPrinciples);
-
 
                 // If match, check whether the event exceeds the activestrategies in play for the challenges
                 if (matchingPrinciples.length > 0) {
                     const failTest = matchingPrinciples.filter(row => (row.eventValue + row.strategyValue) < 0);
-                    const passTest = matchingPrinciples.filter(row => (row.eventValue + row.strategyValue) >= 0 );
+                    const passTest = matchingPrinciples.filter(row => (row.eventValue + row.strategyValue) >= 0);
 
                     if (failTest.length > 0) {
 
@@ -344,28 +352,91 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                         const riskedSlots = allSlots.filter(slot => slot.has(challenge));
                         const riskedTokens = riskedSlots.all(Token);
                         const tokenSum = riskedTokens.sum(token => token.quality);
-
-                        console.log('Token Sum:', tokenSum);
-                        console.log('Token risk:', riskedTokens);
-                        console.log('Token slots:', riskedSlots);
-                        // Check what will be removed and store
-
-
-                        // Then check with the user what they want to do, mitigate or accept and enact
-                        // 5. For FALSE, move the resource tokens to the wastedResource space
-
-                        riskedTokens.putInto(player.my('wastedresource')!); 
-
-                        // challenge.resources.forEach(resource => {
-                       //     resource.move($.wastedResource);
+                        //const tokenSum: number = riskedTokens.reduce((sum, token) => sum + token.quality, 0);
+                        //let tokenSum = 0;
+                        //riskedTokens.forEach(token => {
+                        //    tokenSum += token.quality;
                         //});
-                        //challenge.resources = []; // Clear the tokens from the challenge card
-                        //game.message(`Resource tokens from '${challenge.name}' moved to the wastedResource space.`);
 
+                        console.log('tokensum', tokenSum);
+                        // Create an array to store the output from this loop
+                        // Store the results
+                        results.push({
+                            challenge: challenge,
+                            failTest: failTest,
+                            riskedTokens: riskedTokens, //riskedTokens, //number of tokens, not value
+                            tokenSum: tokenSum,
+                        });
                     }
                 }
             });
-        }),
+
+            if (results.length > 0) {
+
+                // Identify the failing principles
+                const failingPrinciples = results.flatMap(result =>
+                    result.failTest.map(fail => fail.principle)
+                );
+
+                // max event
+                const worstImpact = Math.max(...results.flatMap(result =>
+                    result.failTest.map(fail => fail.eventValue)
+                ));
+
+                // Filter strategy cards
+                const usefulStrategies = player.my('hand')!.all(StrategyCard).filter(strategyCard => {
+                    return strategyCard.contribution?.principles.some(principle => {
+                        return failingPrinciples.includes(principle.principle) && (principle.value || 0) +
+                            principlesData.find(p => p.principle === principle.principle)!.strategyValue >=
+                            Math.abs(principlesData.find(p => p.principle === principle.principle)!.eventValue);
+                    });
+                });
+
+                const usefulTokens = player.my('pool')!.all(Token).filter(tok => tok.quality >= Math.abs(worstImpact));
+
+                // Check that the token slots on the failing challenge cards match the usefulTokens.type
+                const usefulSlots = activechallenges.all('tokenSpace').filter(slot => !slot.has(Token) && usefulTokens.some(token => token.type === slot.name));
+
+                console.log('usefulslots', usefulSlots)
+
+                // Then check with the user what they want to do, mitigate or accept and enact
+                action({
+                    prompt: 'The event has impacted a challenge card. Do you want to mitigate the impact?',
+                    description: 'mitigation',
+                }).chooseFrom('options', [
+                    { choice: 'play', label: 'Play a strategy card' },
+                    { choice: 'token', label: 'Play an available token' },
+                    { choice: 'accept', label: 'Accept the impact of the event' },
+                ],
+                ).do(({ options }) => {
+                    if (options === 'play') {
+                        // Prompt the user to choose a strategy card
+                        action({
+                            prompt: 'Choose a strategy card to play',
+                        }).chooseOnBoard('chosenCard', usefulStrategies).do(({ chosenCard }) => {
+                            chosenCard.putInto($.discard);
+                            game.message(`{{player}} played and discarded strategy card to mitigate the impact.`, {player: player});
+                        });
+                    } else if (options === 'token') {
+
+                        // CONTENT HERE
+
+
+                    } else if (options === 'accept') {
+                        // Handle accepting the impact of the event
+                        results.forEach(result => {
+                            result.riskedTokens.forEach(token => {
+                                token.putInto(player.my('wastedResource')!);
+                            });
+                            game.message(`Resource tokens moved from '${result.challenge.name}' to the wastedResource space.`);
+                        });
+                    }
+                });
+
+            } // THIS IS THis THE END OF THE CONDITIONAL
+
+        }), // THIS IS THE END OF THIS ACTION DECLARATION
+    }), // THIS IS THE END OF DECLARING THE ACTIONS
 
 
                /**
@@ -388,7 +459,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
              }
          }),
                    */
-    });
+
 
     // Define game flow
     game.defineFlow(
@@ -400,12 +471,13 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         () => {
             $.strategyDeck.shuffle();
             $.challengeDeck.shuffle();
+            $.eventDeck.shuffle();
             //game.announce('intro');
         },
         eachPlayer({
             name: 'player',
             do: [
-                // Draw initial hand of strategy cards
+                // Draw initial hand of strategy cards (tokens are already in player pool)
                 ({ player }) => {
                     $.strategyDeck.firstN(game.handLimit, StrategyCard).putInto(player.my('hand')!);
                 },
@@ -513,3 +585,43 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         // 2. Adjust the score/damage markers and check win conditions
     );
 });
+
+
+
+//     game.followUp({
+//         name: "eventOutcome",
+//          args: { results: results },
+//      });
+//            }
+//    }),
+//});
+//eventOutcome: player => action < { results }>({
+/**
+action({
+    prompt: 'The event has impacted a challenge card. Do you want to mitigate the impact?',
+}).chooseFrom(
+    "options", ["Play a strategy card", "Play an available token", "Accept the impact of the event"]
+)
+
+
+ else if (options === 'token') {
+                        // Prompt the user to choose a strategy card
+                        action({
+                            prompt: 'Choose a token to play',
+                        }).chooseOnBoard(
+                            'chosenToken', usefulTokens.all(Token)
+                        ).placePiece(({ chosenToken }), usefulSlots).do(
+                            ({ chosenToken }) => {
+                                player.my('pool')!.first(Token)?.putInto($.wastedResource);
+                                // Add the placePiece action
+
+                                game.message(`{{player}} one token discarded, and token placed`,
+                                    { player: player });
+                            });
+
+
+
+
+
+
+*/

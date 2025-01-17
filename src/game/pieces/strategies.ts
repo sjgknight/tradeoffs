@@ -32,11 +32,11 @@ export const strategyCards: Partial<StrategyCard>[] = [
         cost: 1,
         contribution: {
             principles: [
-                { principle: 1, value: 999 },
-                { principle: 2, value: 999 },
-                { principle: 3, value: 999 },
-                { principle: 4, value: 999 },
-                { principle: 5, value: 999 }
+                { principle: 1, value: 1 },
+                { principle: 2, value: 1 },
+                { principle: 3, value: 1 },
+                { principle: 4, value: 1 },
+                { principle: 5, value: 1 }
             ]
         }
     },
