@@ -701,6 +701,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 // Reset initial resources for the player
                 ({ player }) => {
                     player.resources = game.turnLimit;
+                    game.message(`{{player}} has {{resources}} resources to spend this turn.`, { player: player, resources: player.resources });
                 },
                 // Define the actions the player can take during their turn
                 playerActions({
