@@ -1,3 +1,156 @@
+A code graveyard
+
+
+
+
+//     game.followUp({
+//         name: "eventOutcome",
+//          args: { results: results },
+//      });
+//            }
+//    }),
+//});
+//eventOutcome: player => action < { results }>({
+/**
+action({
+    prompt: 'The event has impacted a challenge card. Do you want to mitigate the impact?',
+}).chooseFrom(
+    "options", ["Play a strategy card", "Play an available token", "Accept the impact of the event"]
+)
+
+
+ else if (options === 'token') {
+                        // Prompt the user to choose a strategy card
+                        action({
+                            prompt: 'Choose a token to play',
+                        }).chooseOnBoard(
+                            'chosenToken', usefulTokens.all(Token)
+                        ).placePiece(({ chosenToken }), usefulSlots).do(
+                            ({ chosenToken }) => {
+                                player.my('pool')!.first(Token)?.putInto($.wastedResource);
+                                // Add the placePiece action
+
+                                game.message(`{{player}} one token discarded, and token placed`,
+                                    { player: player });
+                            });
+
+
+
+
+
+
+*/
+// const usefulSlots = activechallenges.all('tokenSpace').filter(slot => !slot.has(Token) && usefulTokens.some(token => token.type === slot.name));
+//const slotSiblings = activechallenges.others();
+//const slotSiblings = others.activechallenges();
+//const slotSiblings = activechallenges.others(Slot);
+//const parentContainer = activechallenges.container();
+//const firstChallenge = activechallenges.first();
+//const challengeContainer = firstChallenge!.container(Slot);
+//const usefulSlots = activechallenges.all('tokenSpace').filter(slot => !slot.has(Token) && usefulTokens.some(token => token.type === slot.name));
+
+//'challengeSlot', () => $.challengeSpace.all(Space).filter(space => space.isEmpty())
+//() => $.challengeSpace.challengeSlots.all, empty: true, mine: true,
+//player.my('challengeSpace')!.first(Space, 'challengeSlots')!.all(Space).filter(space => space.isEmpty())
+//const allSlots = $.slot.all({ mine: true });
+//const allSlots = $.challengeSlots.all().filter(slot => container(slot) === challengeSlots);
+//const allSlots = container($.challengeSlots);
+//const allSlots = $.challengeSlots.all({ mine: true });
+//const allSlots = challengeSlots.all({ mine: true });
+//const emptySlots3 = emptySlots2.filter(space => space.group === 'challengeslot' );
+//const emptySlots = $.all({ type: $.slot, empty: true, mine: true });
+//const emptySlots = $.challengeSpace.all('challengeSlots', { empty: true, mine: true});
+//
+//const emptySlotCount = emptySlots.length;
+
+
+// const riskedTokensMap = results.flatMap(result =>
+//     result.riskedTokens.map(token => ({
+//         type: 'RiskedToken', // Add a type discriminator
+//         value: { token, challengeName: result.challenge.name },
+//      }))
+// );
+
+//const allSlots = player.allMy(Slot, { group: 'challengeslot' });
+//const emptySlots = allSlots.filter(slot => !slot.has(ChallengeCard));
+//}).chooseOnBoard('chosenCard', player.allMy(StrategyCard).filter(strategyCard => ({ usefulStrategies }).includes(strategyCard))).do(({ chosenCard }) => {
+// why doesn't providing usefulStrategies work here
+// ({ usefulStrategies })
+//({ usefulStrategies }) => usefulStrategies
+//({ usefulStrategies }) => player.my('hand')!.all(StrategyCard).filter(strategyCard => usefulStrategies.includes(strategyCard)
+//player.allMy(StrategyCard)) //works to let me select from my strategycards
+// so either validate, or use a filter on that e.g.,
+// player.allMy(StrategyCard).filter(strategyCard => usefulStrategies.includes(strategyCard))).
+//$.strategyDeck.all(StrategyCard))
+//usefulStrategies
+//player.my('hand')!.all(StrategyCard))
+//('chosenCard', player.my('hand')!.all(StrategyCard).filter(strategyCard => usefulStrategies.includes(strategyCard))).do(({ chosenCard }) => {
+
+//({ chosenCard }) => chosenCard.all(StrategyCard).putInto($.discarded);
+//const tomove = chosenCard.all(StrategyCard);
+//console.log('tomove', tomove);
+//const tomove = chosenCard.all(StrategyCard);
+//chosenCard => chosenCard.move('tomove', 'discarded');
+//({ chosenCard }).all(StrategyCard)!.putInto($.discarded!);
+//chosenCard.putInto($.discarded);
+//({ chosenCard })! => chosenCard(StrategyCard).putInto($.discarded!);
+
+
+/**
+                                 action({
+                                     prompt: 'Choose a token to play',
+                                 }).chooseOnBoard('chosenToken', usefulTokens).do(
+                                     ({ chosenToken }) => {
+                                         action({
+                                             prompt: 'Where do you want to place the token',
+                                         }).chooseOnBoard('chosenLocation', usefulSlots).do(
+                                             ({ chosenLocation }) => {
+                                                 console.log('chosenlocation', chosenLocation);
+                                                 //const locmatch = chosenLocation!.all('Tokenspace').find(space => space.type === chosenToken!.type);
+                                                 const locmatch = chosenLocation.all(Space, 'type');
+                                                 //console.log('loctype', locmatch);
+                                                 //console.log('toktype', chosenToken.type);
+            
+                                                 if (!locmatch) {
+                                                     return 'Token type does not match slot type';
+                                                 } else {
+                                                     chosenToken.putInto(chosenLocation);
+                                                     player.my('pool')!.first(Token)?.putInto($.wastedResource);
+                                                     // Add the placePiece action
+            
+                                                     game.message(`{{player}} one token discarded, and token placed`,
+                                                         { player: player });
+                                                 }
+                                             });
+                                     });
+                                     */
+//player.my('challengeSlots')!.filter((slot) => slot?.has(ChallengeCard))?.all('tokenSpace', {isEmpty: true} )
+// game.all(Slot)  does work  as does 'challengeSlots'
+// game.all('tokenSpace')  works
+// .filter((slot) => slot?.has(ChallengeCard))?.all('tokenSpace', { isEmpty: true })
+//, (token) => token.name === 'tokenSpace')
+//game.all(Space).filter(space => space.name === 'tokenSpace')
+//player.my('challengeSlots') tokenSpace chosenToken
+// && space.isEmpty: true
+
+/** for the drawEvent and check I need:
+ * A conditional to check what's on the board (if there are no tokens)
+ * Variables to check (1) the current resource values on each tokenslot, (2) modified by the current strategies in play
+ * Then check that value (for each slot) against the event requirements
+ * If the requirements are met, the player proceeds to the nxt round
+ * If the requirements are not met, the player must either:
+ *  1. Discard resources placed on any impacted challenge cards,
+ *  adding these to the wastedResource space
+ *  2. Choose to 'mitigate' by playing ONE stratey card or ONE resource if it would mitigate the event impact
+ * adding one unused resource to the wastedResource space
+ * and then immediately drawing a new event card (a full turn is not played, the round marker does not increase)
+ * The drawEvent action then repeats.
+ * 
+ * The options available could probably be made available via the existing actions and adding conditions to those.
+ * 
+ * */
+
+
 //const challengeSpaces = player.all(ChallengeCard).filter(card => card.container?.name === 'challengeSlots');
 //const challengeSpaces = game.all('ChallengeCard', { container: { name: 'challengeSlots' }, mine: true });
 const challengeSlots = game.all(Space).filter(space => space.name === 'challengeSlots');
