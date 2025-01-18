@@ -1,8 +1,11 @@
 /**
  * TO DO
- * 1. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
- * 2. visual design
- * 3.Deal with wildcard strategies (999 value) (see how the example using () => for trump cards)
+ * 1. Fix resource tracking both within playround (i.e., if you spend x your resource is reduced correctly), and resetting between rounds
+ * 2. Fix the subflow, it seems to allow 1 move at the moment 
+ * 2. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
+ * 3. visual design
+ * 4.Deal with wildcard strategies (999 value) (see how the example using () => for trump cards)
+ * 
  * 
  * Ideally i'd work out how to ensure tokens can only be placed on matching type spaces as a function or class method
  * I need to add some conditional logic to ensure players can take up to x moves/spend up to x resource each turn
@@ -231,8 +234,6 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             'challengeCard', $.discarded
         ).do(({ challengeCard }) => {
             if (player.resources >= 1) {
-                player.resources -= 1;
-
                 player.resources -= 1;
                 player.score += 1;
                 player.stashedThisTurn = true;
@@ -541,8 +542,6 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         checkStatus: player => action({
             prompt: 'Check the status of the game',
         }).do(() => {
-            const wastedTokens = player.my('wastedResource')!.all(Token).length;
-            const poolTokens = player.my('pool')!.all(Token).length;
 
             // Define the type for Principle
             interface Principle {
@@ -606,15 +605,17 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 }
             });
 
+            const wastedTokens = player.my('wastedResource')!.all(Token).length;
+
             // Check win/lose conditions
             if (player.score >= game.wincondition) {
                 game.message(`{{player}} wins the game!`, { player: player });
                 // send to a winner loop;
-            } else if (wastedTokens >= game.losecondition || poolTokens < 4 || game.round > game.maxRounds) {
+            } else if (wastedTokens >= game.losecondition || player.my('pool')!.all(Token).length < 4 || game.round > game.maxRounds) {
                 game.message(`{{player}} loses the game!`, { player: player });
                 // send to a loser loop
             } else if (game.round <= 6) {
-                game.message(`{{player}} proceeds to the next round with {{ score }}.`, { player: player, score: player.score });
+                game.message(`{{player}} proceeds to the next round with {{ score }} and resource {{ resource }}.`, { player: player, score: player.score, resource: player.resources });
                 game.round += 1;
                 //return game.x(); // here I thought I could refer people back to my flow phase, but perhaps I need to have a separate choices action to refer people to...this seems overkill?
                 Do.subflow('playround');
@@ -667,11 +668,52 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
             eachPlayer({
                 name: 'playerinturnphase',
-                continueUntil: () => game.players.current()!.resources <= 0, // so why set the name 'playerinturnphase'? Can it be referred to?  
+                //continueUntil: () => game.players.current()!.resources <= 0, // so why set the name 'playerinturnphase'? Can it be referred to?  
                 do: [
+
                     () => Do.subflow('playround'),
+                    playerActions({ //initially I had this in its own section as  below
+                        actions: ['drawEvent']
+                    }),
+                    () => game.players.current()!.resources = game.turnLimit, // I have to reset this at some point
+
+                    playerActions({
+                        actions: ['checkStatus']
+                    })
                 ]
             }),
+            /**
+             * 
+             * Loop attempt...also doesnt work
+             * 
+             * () => {
+                loop(
+                    whileLoop({
+                        while: () => game.players.current()!.score < game.wincondition &&
+                            game.players.current()!.my('wastedResource')!.all(Token).length < game.losecondition &&
+                            game.players.current()!.my('pool')!.all(Token).length >= 4 &&
+                            game.round <= game.maxRounds,
+                        do: [
+                            eachPlayer({
+                                name: 'playerinturnphase',
+                                () => Do.subflow('playround'),
+                                playerActions({
+                                    actions: ['drawEvent']
+                                }),
+                                () => game.players.current()!.resources = game.turnLimit, // Reset resources for the next round
+                                playerActions({
+                                    actions: ['checkStatus']
+                                })
+                                })
+                        ]
+                    })
+                    )}, // end of loop
+             * 
+             * 
+             * 
+             * 
+             * 
+             * 
             eachPlayer({
                 name: 'eventphase',
                 do: [
@@ -680,15 +722,18 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     })
                 ],
             }),
+            
             eachPlayer({
                 name: 'conditionCheckPhase',
                 do: [
+                    () => game.players.current()!.resources = game.turnLimit, // I have to reset this at some point
+
                     playerActions({
                         actions: ['checkStatus']
                     })
                 ],
             }), // end of this part of flow
-
+            */
         ) // End of flow definition 
 
 
@@ -696,18 +741,18 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         'playround',
         eachPlayer({
             name: 'player',
+            continueUntil: () => game.players.current()!.resources <= 0,
             //initial: game.players.current()!.resources = 3, // reset initial resources
             do: [
                 // Reset initial resources for the player
                 ({ player }) => {
-                    player.resources = game.turnLimit;
                     game.message(`{{player}} has {{resources}} resources to spend this turn.`, { player: player, resources: player.resources });
                 },
                 // Define the actions the player can take during their turn
                 playerActions({
                 actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'addChallengeCard', 'stashCard']
                 })
-            ]
+            ]   
         })
     ); // end subflow
     
