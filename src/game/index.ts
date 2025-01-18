@@ -145,7 +145,22 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
     // Define actions
     // It seems messages require you to give the template string and variables to substitute in (you can't just call from environments)
+
     game.defineActions({
+        /**
+        chooseActions: player =>
+            action({
+                prompt: 'Pick an action',
+            }).chooseFrom(
+                'actions', [
+                    'draw a Strategy card (free)': drawStrategyCard,
+                    'play an innovation tile (see tile costs)': playInnovation,
+                    'play a strategy card (see card costs)': playStrategyCard,
+                    'add an extra challenge': addChallengeCard,
+                    'stash a challenge card (gain 1 point, lose 1 resource)': stashCard
+                ]
+            ),
+            */
 
         // allow a player to draw additional strategy cards from the strategy deck into their hand (at cost set by strategyDrawCost, currently free/0)
         drawStrategyCard: player => action({
@@ -215,10 +230,14 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         ).move(
             'challengeCard', $.discarded
         ).do(({ challengeCard }) => {
-            player.resources -= 1;
-            player.score += 1;
-            player.stashedThisTurn = true;
-            game.message(`{{player}} stashed a card and increased their score by 1.`, { player: player });
+            if (player.resources >= 1) {
+                player.resources -= 1;
+
+                player.resources -= 1;
+                player.score += 1;
+                player.stashedThisTurn = true;
+                game.message(`{{player}} stashed a card and increased their score by 1.`, { player: player });
+            }
         }),
 
         drawEvent: player => action({
@@ -598,7 +617,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 game.message(`{{player}} proceeds to the next round with {{ score }}.`, { player: player, score: player.score });
                 game.round += 1;
                 //return game.x(); // here I thought I could refer people back to my flow phase, but perhaps I need to have a separate choices action to refer people to...this seems overkill?
-                Do.subflow('playerinturnphasew');
+                Do.subflow('playround');
+                //Do.continue('playround');
                 // return to the main loop
             } // end of do
         }), // end of this action
@@ -637,11 +657,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                         // I think this has worked...
                         $.challengeDeck.firstN(3, ChallengeCard).putInto(player.my('hand')!);
                     },
-                    // Put all the other challenge cards into the deck
-                    ({ player }) => {
-                        // I think this has worked...
-                        $.challengeDeck.firstN(5, ChallengeCard).putInto(player.my('hand')!); //challengeSpace.challengeSlots.slot0
-                    }, // Set the round marker to an initial state of 1
+                    // all the other challenge cards are in the deck  //challengeSpace.challengeSlots.slot0
+                    // Set the round marker to an initial state of 1
                     () => {
                         game.round = 1;
                     }
@@ -650,10 +667,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
             eachPlayer({
                 name: 'playerinturnphase',
-                continueUntil: () => game.players.current()!.resources <= 0, // so why set the name 'playerinturnphase'? Can it be referred to?
-                do: playerActions({
-                    actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'addChallengeCard', 'stashCard']
-                }),
+                continueUntil: () => game.players.current()!.resources <= 0, // so why set the name 'playerinturnphase'? Can it be referred to?  
+                do: [
+                    () => Do.subflow('playround'),
+                ]
             }),
             eachPlayer({
                 name: 'eventphase',
@@ -672,9 +689,32 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 ],
             }), // end of this part of flow
 
-        )
+        ) // End of flow definition 
 
-}); // // End of flow definition END OF GAME DEFINITION
+
+    game.defineSubflow(
+        'playround',
+        eachPlayer({
+            name: 'player',
+            //initial: game.players.current()!.resources = 3, // reset initial resources
+            do: [
+                // Reset initial resources for the player
+                ({ player }) => {
+                    player.resources = game.turnLimit;
+                },
+                // Define the actions the player can take during their turn
+                playerActions({
+                actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'addChallengeCard', 'stashCard']
+                })
+            ]
+        })
+    ); // end subflow
+    
+
+
+
+}); // END OF GAME DEFINITION
+
 
 
 
