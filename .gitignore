@@ -5,3 +5,35 @@
 /yarn.lock
 tsconfig.tsbuildinfo
 *.vsidx
+
+.DS_Store
+/node_modules
+/dist
+/bin
+
+# Ignore everything in 'main' folder
+.*
+
+# Except for 'subfolder2'
+!./tradeoffs/
+
+# Additionally, if there are files inside 'subfolder2' that should be included, you need to unignore those as well
+!./tradeoffs/**
+
+
+# Created by https://www.gitignore.io/api/visualstudiocode
+# Edit at https://www.gitignore.io/?templates=visualstudiocode
+# Adapted from https://stackoverflow.com/questions/32964920/should-i-commit-the-vscode-folder-to-source-control 
+
+### VisualStudioCode ###
+.vscode/**/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+/.vs
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+**/.history
+
