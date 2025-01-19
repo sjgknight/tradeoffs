@@ -19,9 +19,9 @@ render(setup, {
 
     game.all(Token).appearance({
       aspectRatio: 1,
-      render: () => (
+      render: (Token) => (
         <div className="flipper">
-          <div className="front"></div>
+          <div className="front">{Token.type}<br></br>{Token.quality}</div>
           <div className="back"></div>
         </div>
       )
