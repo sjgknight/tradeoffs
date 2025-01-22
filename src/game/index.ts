@@ -1,16 +1,18 @@
 /**
  * TO DO
- * 1. Fix resource tracking both within playround (i.e., if you spend x your resource is reduced correctly), and resetting between rounds
- * 2. Fix the subflow, it seems to allow 1 move at the moment 
+ * 1. fix the subflow followup and check other code for stupidity https://docs.boardzilla.io/api/classes/Game#flowcommands 
  * 2. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
- * 3. visual design
- * 4.Deal with wildcard strategies (999 value) (see how the example using () => for trump cards)
+ * 3. visual design https://docs.boardzilla.io/category/customizing-the-ui
+ * 4. Deal with wildcard strategies (999 value) (see how the example using () => for trump cards)
+ * 5. Consider 1 player, cooperative, and competitive modes. In cooperative challenges and strategies could be shared. In competitive, only strategies.
+ * 6. Consider a 'versioning' with different game modes (possibly even allowing users to add cards)
+ * 7. Ideally i'd work out how to ensure tokens can only be placed on matching type spaces as a function or class method
+ * 8. Consider if there's a way to automate balance testing, can I record outputs with random hands and choices using https://docs.boardzilla.io/cookbook/testing ?
+ * can I run different tests with e.g., a 'probably bad' and 'probably good' strategy to compare likelihood of winning
+ * 9. Consider publish https://docs.boardzilla.io/publishing/publish or elsewhere
  * 
- * 
- * Ideally i'd work out how to ensure tokens can only be placed on matching type spaces as a function or class method
- * I need to add some conditional logic to ensure players can take up to x moves/spend up to x resource each turn
- * Win conditions
- * Lose conditions
+ * With 3 resource and win at score 10, a minimum of 3 challenges need completing and one stashing, requiring spend of 14 absolute minimum, or 5 turns.
+ * I've changed the resource setting to 5 to allow for more flexibility in the game, further testing needed.
  * 
  */
 
@@ -35,9 +37,10 @@ export class TradeoffsPlayer extends Player<Tradeoffs, TradeoffsPlayer> {
      * The game class provides shared properties such as the round we're on.
      */
     score: number = 0;
-    resources: number = 3;
+    resources: number = 5;
     stashedThisTurn: boolean = false;
     damage: number = 0; //used to store wastedresource
+    status: 'win' | 'lose' | undefined; // can only be 'win', 'lose', or undefined
 }
 
 export class Tradeoffs extends Game<Tradeoffs, TradeoffsPlayer> {
@@ -46,7 +49,7 @@ export class Tradeoffs extends Game<Tradeoffs, TradeoffsPlayer> {
      */
     round: number = 0;
     maxRounds: number = 6;
-    turnLimit: number = 3;
+    turnLimit: number = 5;
     handLimit: number = 10;
     poolSize: number = 20;
     strategyDrawCost: number = 4;
@@ -78,8 +81,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         loop,
     } = game.flowCommands;
 
+
     // For each player, setup their space (this is probably a 1 player game, but this provides extensibility)
     for (const player of game.players) {
+
 
         // setup space to hold challenge cards
         // contains three slots slot0, slot1, slot2
@@ -241,6 +246,15 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             }
         }),
 
+        // allow a player to skip their turn by setting their resources to 0
+        skip: player => action({
+            prompt: 'skip the rest of your turn',
+        }).do(() => {
+            player.resources = 0;
+            game.message(`{{player}} resources passed for this turn.`,
+                { player: player });
+        }),
+
         drawEvent: player => action({
             prompt: 'Draw an event card',
         }).chooseOnBoard(
@@ -273,7 +287,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 const principleData = principlesData.find(p => p.principle === impact.principle);
                 if (principleData) {
                     principleData.eventValue += impact.value || 0;
-                };
+                }
             });
 
             // Aggregate values from the active strategies
@@ -286,7 +300,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                         }
                     });
                 });
-            };
+            }
 
             // Then I want to check each challenge card to:
             // 1. See whether the card requirements relate to the -impact of the event
@@ -314,7 +328,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     const principleData = principlesData.find(p => p.principle === principle.principle);
                     if (principleData) {
                         principleData.challengeValue = principle.value || 0;
-                    };
+                    }
                 });
 
                 // Check whether this event matches the requirements of the challenge
@@ -400,6 +414,9 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
                 // Then pass all of this information to a followup to the player can resolve the event
                 // usefulSlots holds the valid positions
+
+                console.log('immediately prior to the resolveEvent followup')
+                // Using followUp
                 game.followUp({
                     name: 'resolveEvent',
                     args: {
@@ -410,6 +427,9 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                         impactedChallenges: impactedChallenges
                     },
                 });
+
+
+
             } // THIS IS THE END OF THE 'check fails' CONDITIONAL;  // DO I NEED AN ELSE HERE TO LOOP THROUGH GAMEPLAY ROUNDS?
         }), // THIS IS THE END OF THE DRAW EVENT ACTION
 
@@ -428,9 +448,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         }).chooseFrom('options', [
             { choice: 'play', label: 'Play a strategy card' },
             { choice: 'token', label: 'Play an available token' },
-            {
-                choice: 'accept', label: 'Accept the impact of the event'
-            },
+            { choice: 'accept', label: 'Accept the impact of the event' },
         ],
         ).do(({ options, usefulSlots, usefulTokens, usefulStrategies, riskedTokensMap, impactedChallenges }) => {
             // Log all arguments (they all pass correctly)
@@ -465,6 +483,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 });
                 game.message(`Resource tokens moved from {{impactedChallenges}} to the wastedResource space.`,
                     { impactedChallenges: impactedChallenges });
+                //game.followUp({ name: 'playerinturnphase' });
+                
 
             } // END OF THE ELSE IF
         }), // end othe action
@@ -475,8 +495,11 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         }>({
             // Prompt the user to choose a token and corresponding slot (or automatically allocate it)
             prompt: 'Choose a Token and Slot to play',
-        }).chooseOnBoard('chosenToken', ({ usefulTokens }) => usefulTokens).chooseOnBoard('chosenSlot', ({ usefulSlots }) => usefulSlots).do(({ chosenToken, chosenSlot }) => {
+        }).chooseOnBoard('chosenToken', ({ usefulTokens }) => usefulTokens).chooseOnBoard('chosenSlot', ({ usefulSlots }) => usefulSlots).do(({ chosenToken, chosenSlot, usefulSlots, usefulTokens }) => {
             // Ideally have validation here to check the slot type and token type match
+            console.log('usefulTokens', usefulTokens);
+            console.log('usefulSlots', usefulSlots);
+
             chosenToken.putInto(chosenSlot);
 
             player.my('pool')!.first(Token)?.putInto($.wastedResource);
@@ -512,7 +535,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
             // Player mitigated so must pass through an event to proceed
             game.followUp({ name: 'drawEvent' });
-
+            
         }), // End of the action call
 
         playInnovation: player => action({
@@ -610,15 +633,20 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             // Check win/lose conditions
             if (player.score >= game.wincondition) {
                 game.message(`{{player}} wins the game!`, { player: player });
-                // send to a winner loop;
+                player.status = 'win';
+                game.finish(player);
+                // send to a winner flow;
             } else if (wastedTokens >= game.losecondition || player.my('pool')!.all(Token).length < 4 || game.round > game.maxRounds) {
                 game.message(`{{player}} loses the game!`, { player: player });
-                // send to a loser loop
+                player.status = 'lose';
+                // send to a loser flow
             } else if (game.round <= 6) {
                 game.message(`{{player}} proceeds to the next round with {{ score }} and resource {{ resource }}.`, { player: player, score: player.score, resource: player.resources });
                 game.round += 1;
                 //return game.x(); // here I thought I could refer people back to my flow phase, but perhaps I need to have a separate choices action to refer people to...this seems overkill?
-                Do.subflow('playround');
+
+
+                //Do.subflow('playround');
                 //Do.continue('playround');
                 // return to the main loop
             } // end of do
@@ -665,23 +693,43 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     }
                 ]
             }),
+            loop(
+                whileLoop({
+                    // Outer loop runs until the current player wins or loses
+                    while: () =>
+                        game.players.current()!.status !== 'win' &&
+                        game.players.current()!.status !== 'lose',
+                    do: [
+                        eachPlayer({
+                            name: 'playerinturnphase',
+                            // Loop through each player's turn
+                            do: [
+                                // Subflow for playing a round (custom logic inside this subflow)
+                                () => Do.subflow('playround'),
 
-            eachPlayer({
-                name: 'playerinturnphase',
-                //continueUntil: () => game.players.current()!.resources <= 0, // so why set the name 'playerinturnphase'? Can it be referred to?  
-                do: [
+                                // Draw an event card and resolve it
+                                playerActions({
+                                    actions: ['drawEvent'],
+                                }),
 
-                    () => Do.subflow('playround'),
-                    playerActions({ //initially I had this in its own section as  below
-                        actions: ['drawEvent']
-                    }),
-                    () => game.players.current()!.resources = game.turnLimit, // I have to reset this at some point
+                                // Check the player's status after the event
+                                playerActions({
+                                    actions: ['checkStatus'],
+                                }),
 
-                    playerActions({
-                        actions: ['checkStatus']
-                    })
-                ]
-            }),
+                                // Reset player's resources after their turn is complete, and allow stash next turn
+                                () => {
+                                    game.players.current()!.resources = game.turnLimit;
+                                    game.players.current()!.stashedThisTurn = false; 
+                                },
+                            ],
+                            // Exit each player's turn if they win or lose
+                           
+                        }),
+                    ],
+                })
+            ),
+
             /**
              * 
              * Loop attempt...also doesnt work
@@ -750,13 +798,12 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 },
                 // Define the actions the player can take during their turn
                 playerActions({
-                actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'addChallengeCard', 'stashCard']
+                actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'addChallengeCard', 'stashCard', 'skip']
                 })
             ]   
         })
     ); // end subflow
     
-
 
 
 }); // END OF GAME DEFINITION
@@ -768,7 +815,6 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
  * 
             /**
              * Here add code to resolve the challenge cards and add them to the score
-             * Can you use this code sample to:
             (1) identify the activechallenges
             (2a) identify the requirements on those challenges, and (2b) whether or not the current strategycard contributions exceed those challenges,
             (3) identify whether the tokenSpace on the challenge contains 4 tokens with different types. 

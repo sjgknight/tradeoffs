@@ -11,14 +11,10 @@ tsconfig.tsbuildinfo
 /dist
 /bin
 
-# Ignore everything in 'main' folder
-.*
-
-# Except for 'subfolder2'
-!./tradeoffs/
-
-# Additionally, if there are files inside 'subfolder2' that should be included, you need to unignore those as well
-!./tradeoffs/**
+# artefact of a bad decision
+# Ignore everything in 'main' folder .*
+# Except for 'subfolder2' !./tradeoffs/
+# Additionally, if there are files inside 'subfolder2' that should be included, you need to unignore those as well !./tradeoffs/**
 
 
 # Created by https://www.gitignore.io/api/visualstudiocode
