@@ -1,3 +1,15 @@
+## To run
+
+Install e.g., `go install github.com/boardzilla/boardzilla-devtools/cmd/bz@latest` (see https://docs.boardzilla.io/introduction/getting-started)
+
+`npm run dev`
+
+May need to
+`netstat -ano | findstr ":80"`
+`taskkill /PID PIDHERE /F`
+
+
+
 ## Background to repo
 
 Very much in draft idea (a) game, (b) system, and (c) code. 
@@ -17,5 +29,3 @@ There may well be (significant) errors, although I have (a) reviewed code, and (
 The game material itself needs significant testing/development, the samples are just for testing the code. 
 
 
-netstat -ano | findstr ":80"
-taskkill /PID PIDHERE /F

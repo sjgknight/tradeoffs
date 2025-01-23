@@ -11,6 +11,8 @@ tsconfig.tsbuildinfo
 /dist
 /bin
 
+*.bak
+
 # artefact of a bad decision
 # Ignore everything in 'main' folder .*
 # Except for 'subfolder2' !./tradeoffs/

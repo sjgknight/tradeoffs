@@ -8,6 +8,10 @@ May need to
 `netstat -ano | findstr ":80"`
 `taskkill /PID PIDHERE /F`
 
+## To do
+
+See todo at top of game/index.ts
+
 
 
 ## Background to repo
