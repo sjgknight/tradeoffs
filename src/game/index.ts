@@ -1,6 +1,6 @@
 /**
  * TO DO
- * 1. fix the subflow followup and check other code for stupidity https://docs.boardzilla.io/api/classes/Game#flowcommands 
+ * 1. <s>fix the subflow followup </s>and check other code for stupidity https://docs.boardzilla.io/api/classes/Game#flowcommands 
  * 2. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
  * 3. visual design https://docs.boardzilla.io/category/customizing-the-ui
  * 4. Deal with wildcard strategies (999 value) (see how the example using () => for trump cards)
@@ -613,6 +613,11 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 const tokens = tokenSpaces.flatMap(tokenSpace => tokenSpace.all(Token));
                 const uniqueTokenTypes = new Set(tokens.map(token => token.type));
 
+                console.log("activechallenges", activeChallenges);
+                console.log("activestrategies", activeStrategies);
+                console.log("tokens", tokens);   
+
+
                 if (passTest && uniqueTokenTypes.size >= 4) {
                     // 1. Set the challenge is_complete field to 'true'
                     challenge.is_complete = true;
@@ -640,7 +645,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 game.message(`{{player}} loses the game!`, { player: player });
                 player.status = 'lose';
                 // send to a loser flow
-            } else if (game.round <= 6) {
+            } else if (game.round <= game.maxRounds) {
                 game.message(`{{player}} proceeds to the next round with {{ score }} and resource {{ resource }}.`, { player: player, score: player.score, resource: player.resources });
                 game.round += 1;
                 //return game.x(); // here I thought I could refer people back to my flow phase, but perhaps I need to have a separate choices action to refer people to...this seems overkill?
@@ -705,7 +710,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                             // Loop through each player's turn
                             do: [
                                 // Subflow for playing a round (custom logic inside this subflow)
-                                () => Do.subflow('playround'),
+                                ({playerinturnphase}) => Do.subflow('playround'),
 
                                 // Draw an event card and resolve it
                                 playerActions({
@@ -718,9 +723,9 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                                 }),
 
                                 // Reset player's resources after their turn is complete, and allow stash next turn
-                                () => {
-                                    game.players.current()!.resources = game.turnLimit;
-                                    game.players.current()!.stashedThisTurn = false; 
+                                ({ playerinturnphase }) => {
+                                    playerinturnphase.resources = game.turnLimit;
+                                    playerinturnphase.stashedThisTurn = false; 
                                 },
                             ],
                             // Exit each player's turn if they win or lose
