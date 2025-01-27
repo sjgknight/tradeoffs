@@ -1,5 +1,7 @@
 /**
  * TO DO
+ * 0. There's something wrong with the playInnovation action such that the tile doesnt move or show (although the resources are reduced, and they do seem to move into the wastedResources)
+ * 
  * 1. <s>fix the subflow followup </s>and check other code for stupidity https://docs.boardzilla.io/api/classes/Game#flowcommands 
  * 2. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
  * 3. visual design https://docs.boardzilla.io/category/customizing-the-ui
@@ -468,6 +470,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     },
                 });
             } else if (options === 'token') {
+                
                 //Prompt the user to choose a token
                 game.followUp({
                     name: 'mitigateToken',
@@ -492,13 +495,15 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         mitigateToken: player => action<{
             usefulTokens: Token[],
             usefulSlots: Slot[]
-        }>({
+        } > ({
             // Prompt the user to choose a token and corresponding slot (or automatically allocate it)
             prompt: 'Choose a Token and Slot to play',
         }).chooseOnBoard('chosenToken', ({ usefulTokens }) => usefulTokens).chooseOnBoard('chosenSlot', ({ usefulSlots }) => usefulSlots).do(({ chosenToken, chosenSlot, usefulSlots, usefulTokens }) => {
             // Ideally have validation here to check the slot type and token type match
-            console.log('usefulTokens', usefulTokens);
-            console.log('usefulSlots', usefulSlots);
+          
+            if (usefulSlots.length === 1) {
+                chosenSlot = usefulSlots[0];
+            } 
 
             chosenToken.putInto(chosenSlot);
 
@@ -553,10 +558,17 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             });
         }).do(({ chosenToken, chosenSpace }) => {
             if (player.resources >= chosenToken.quality && chosenToken.type === chosenSpace.name) {
+                // Reduce resources by the cost of the token
                 player.resources -= chosenToken.quality;
+                console.log('chosenToken', chosenToken);
+                console.log('chosenSpace', chosenSpace);
+                // Move the token into the chosen space
+                chosenToken.putInto(chosenSpace);
+                // Tell the player about it
                 game.message(`{{player}} played a {{token}} token on a challenge card.`,
                     { player: player, token: chosenToken.type });
             } else {
+                // Tell the player they can't afford it
                 game.message(`{{player}} does not have enough resources or the space does not match the token type.`,
                     { player: player });
             }

@@ -1,6 +1,7 @@
 #play-area {
     .Token {
         perspective: 1000px;
+        z-index: 2000;
 
         .flipper {
             width: 100%;
