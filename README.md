@@ -8,6 +8,10 @@ May need to
 `netstat -ano | findstr ":80"`
 `taskkill /PID PIDHERE /F`
 
+Support (for the framework, not this game) via 
+https://discord.com/channels/959788025670414366/959788025670414369
+https://docs.boardzilla.io/introduction/development
+
 ## To do
 
 See todo at top of game/index.ts
