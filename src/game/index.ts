@@ -1,8 +1,8 @@
 /**
  * TO DO
  * 0. There's something wrong with the playInnovation action such that the tile doesnt move or show (although the resources are reduced, and they do seem to move into the wastedResources)
- * 
- * 1. <s>fix the subflow followup </s>and check other code for stupidity https://docs.boardzilla.io/api/classes/Game#flowcommands 
+ *
+ * 1. <s>fix the subflow followup </s>and check other code for stupidity https://docs.boardzilla.io/api/classes/Game#flowcommands
  * 2. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
  * 3. visual design https://docs.boardzilla.io/category/customizing-the-ui
  * 4. Deal with wildcard strategies (999 value) (see how the example using () => for trump cards)
@@ -12,10 +12,10 @@
  * 8. Consider if there's a way to automate balance testing, can I record outputs with random hands and choices using https://docs.boardzilla.io/cookbook/testing ?
  * can I run different tests with e.g., a 'probably bad' and 'probably good' strategy to compare likelihood of winning
  * 9. Consider publish https://docs.boardzilla.io/publishing/publish or elsewhere
- * 
+ *
  * With 3 resource and win at score 10, a minimum of 3 challenges need completing and one stashing, requiring spend of 14 absolute minimum, or 5 turns.
  * I've changed the resource setting to 5 to allow for more flexibility in the game, further testing needed.
- * 
+ *
  */
 
 import {
@@ -83,35 +83,45 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         loop,
     } = game.flowCommands;
 
-
     // For each player, setup their space (this is probably a 1 player game, but this provides extensibility)
     for (const player of game.players) {
 
+    // setup space to hold challenge cards
+    // contains three slots slot0, slot1, slot2
+    // each slot contains a tokenSpace for each token type
+    // this allows us to check if the tokens are in place for a challenge
+    // by checking the space, rather than the card
+    const challengeSpace = game.create(Space, 'challengeSpace', { player });
 
-        // setup space to hold challenge cards
-        // contains three slots slot0, slot1, slot2
-        // each slot contains a tokenSpace for each token type
-        // this allows us to check if the tokens are in place for a challenge
-        // by checking the space, rather than the card
-        const challengeSpace = game.create(Space, 'challengeSpace', { player });
+    // Define challengeSlots as a child space of challengeSpace
+    const challengeSlots = challengeSpace.create(Space, 'challengeSlots', { player });
 
-        const challengeSlots = challengeSpace.create(Space, 'challengeSlots', { player });
-        for (let i = 0; i < 3; i++) {
-            const slot = challengeSlots.create(Slot, `slot${i}`, { group: 'challengeslot' });
-            const tokenSpace = slot.create(Space, 'tokenSpace');
-            ['Data', 'Method', 'User', 'Aim'].forEach(type => {
-                tokenSpace.create(Space, `${type}`);
-            });
-        }
+    for (let i = 0; i < 3; i++) {
+        const slot = challengeSlots.create(Slot, `slot${i}`, { group: 'challengeslot' });
+        const tokenSpace = slot.create(Space, 'tokenSpace');
 
-        // setup space to hold completed challenge cards (may not be needed)
-        const challengeCompleted = game.create(Space, 'challengeCompleted', { player });
+        // Create spaces for each token type - use unique names to avoid React key conflicts
+        const slotNum = i + 1; // Start from 1
+        const dataSpace = tokenSpace.create(Space, `Data-${slotNum}`);
+        const methodSpace = tokenSpace.create(Space, `Method-${slotNum}`);
+        const userSpace = tokenSpace.create(Space, `User-${slotNum}`);
+        const aimSpace = tokenSpace.create(Space, `Aim-${slotNum}`);
 
+        // console.log(`Created slot${i} with token spaces:`, {
+        //     data: dataSpace.name,
+        //     method: methodSpace.name,
+        //     user: userSpace.name,
+        //     aim: aimSpace.name
+        // });
+    }
         // setup space to hold strategies that are in play
         const activeStrategies = game.create(Space, 'activeStrategies', { player });
 
         // setup player hand (to hold cards)
         const hand = game.create(Space, 'hand', { player });
+
+        // setup space to hold completed challenge cards (may not be needed)
+        const challengeCompleted = game.create(Space, 'challengeCompleted', { player });
 
         // pool (for tokens), and create the tokens
         const pool = game.create(Space, 'pool', { player });
@@ -124,14 +134,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         }
 
         // setup space to track the score using the scoringtoken piece,
-        // to track wastedResource damage using the damage piece 
+        // to track wastedResource damage using the damage piece
         // and to track discarded pieces
-        const discarded = game.create(Space, 'discarded', { player });
-        const wastedResource = game.create(Space, 'wastedResource', { player });
-        const scoreArea = game.create(Space, 'scoreArea', { player });
-
-        // Setup score counter piece for the player
-        game.create(ScoreCounter, 'scoreCounter', { value: player.score });
 
         // Setup event deck
         const eventDeck = game.create(Space, 'eventDeck');
@@ -145,12 +149,15 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             challengeDeck.create(ChallengeCard, `challengeCard${i}`, card);
         });
 
+        const discarded = game.create(Space, 'discarded', { player });
+
         // Setup strategy deck
         const strategyDeck = game.create(Space, 'strategyDeck');
         strategyCards.forEach(card => {
             strategyDeck.create(StrategyCard, card.name!, card);
         });
 
+        const wastedResource = game.create(Space, 'wastedResource', { player });
     }
 
     // Define actions
@@ -217,14 +224,14 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
             const allSlots = player.allMy(Slot, { group: 'challengeslot' });
             const emptySlots = allSlots.filter(slot => !slot.has(ChallengeCard));
-            //console.log('All Challenge Slots:', emptySlots);
+            console.log('All Challenge Slots:', emptySlots);
 
             if (emptySlots.length > 0) {
                 // find the  empty challengeSlot and place the item
                 const freeSlot = emptySlots.first()!;
                 //console.log('free Slots:', freeSlot);
                 //console.log('slots now', player.allMy(Slot, { group: 'challengeslot' }));
-                challengeCard.putInto(freeSlot)!; //emptySlots[0]); //$.slot1); 
+                challengeCard.putInto(freeSlot)!; //emptySlots[0]); //$.slot1);
                 game.message(`{{player}} placed a new challenge card.`, { player: player });
             } else {
                 game.message(`{{player}} does not have any empty slots to place this challenge`,
@@ -244,6 +251,13 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 player.resources -= 1;
                 player.score += 1;
                 player.stashedThisTurn = true;
+
+                // Update the ScoreCounter piece
+                const scoreCounter = game.first(ScoreCounter);
+                if (scoreCounter) {
+                    scoreCounter.value = player.score;
+                }
+
                 game.message(`{{player}} stashed a card and increased their score by 1.`, { player: player });
             }
         }),
@@ -397,13 +411,13 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 // Check that the token slots on the failing challenge cards match the usefulTokens.type
                 // how to get which slots. ARGH.  Others? Or parent of them?
                 // Iterate over usefulSlots to access their tokenSpace children
-                const usefulSlots = activechallenges
+                const usefulSlots = [...new Set(activechallenges
                     .map(challenge => challenge.container(Slot)).flatMap(slot => {
                         // Access the tokenSpace children of each slot
                         const tokenSpaces = slot!.all(Space).filter(space => space.name === 'tokenSpace');
-                        // Filter the tokenSpace slots based on the Token type
-                        return tokenSpaces.flatMap(tokenSpace => tokenSpace.all(Space).filter(space => usefulTokens.some(token => token.type === space.name)));
-                    });
+                        // Filter the tokenSpace slots based on the Token type (space names now include slot index)
+                        return tokenSpaces.flatMap(tokenSpace => tokenSpace.all(Space).filter(space => usefulTokens.some(token => space.name.startsWith(token.type))));
+                    }))];
 
                 // Create a flat map of result.riskedTokens and result.challenge.name
                 const riskedTokensMap = results.flatMap(result =>
@@ -435,7 +449,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             } // THIS IS THE END OF THE 'check fails' CONDITIONAL;  // DO I NEED AN ELSE HERE TO LOOP THROUGH GAMEPLAY ROUNDS?
         }), // THIS IS THE END OF THE DRAW EVENT ACTION
 
-        // Then action to check with the user what they want to do, mitigate or accept and enact 
+        // Then action to check with the user what they want to do, mitigate or accept and enact
         // with followup to different actions depending on decision
 
         resolveEvent: player => action<{
@@ -470,7 +484,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     },
                 });
             } else if (options === 'token') {
-                
+
                 //Prompt the user to choose a token
                 game.followUp({
                     name: 'mitigateToken',
@@ -487,7 +501,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 game.message(`Resource tokens moved from {{impactedChallenges}} to the wastedResource space.`,
                     { impactedChallenges: impactedChallenges });
                 //game.followUp({ name: 'playerinturnphase' });
-                
+
 
             } // END OF THE ELSE IF
         }), // end othe action
@@ -500,10 +514,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             prompt: 'Choose a Token and Slot to play',
         }).chooseOnBoard('chosenToken', ({ usefulTokens }) => usefulTokens).chooseOnBoard('chosenSlot', ({ usefulSlots }) => usefulSlots).do(({ chosenToken, chosenSlot, usefulSlots, usefulTokens }) => {
             // Ideally have validation here to check the slot type and token type match
-          
+
             if (usefulSlots.length === 1) {
                 chosenSlot = usefulSlots[0];
-            } 
+            }
 
             chosenToken.putInto(chosenSlot);
 
@@ -540,37 +554,54 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
             // Player mitigated so must pass through an event to proceed
             game.followUp({ name: 'drawEvent' });
-            
+
         }), // End of the action call
 
         playInnovation: player => action({
             prompt: 'Play an innovation token on a challenge card',
         }).chooseOnBoard(
-            'chosenToken', player.my('pool')!.all(Token) // validate that they can afford it. Tried to use placePiece here and failed. Inelegant filter here...
+            'chosenToken', player.my('pool')!.all(Token)
         ).chooseOnBoard('chosenSpace', ({ chosenToken }) => {
-            return game.all(Space, 'tokenSpace').filter(tokenSpace => {
-                // Check if the parent contains an object of type ChallengeCard
+            const allTokenSpaces = game.all(Space, 'tokenSpace');
+            // console.log('All tokenSpaces found:', allTokenSpaces.length);
+
+            const validSpaces = allTokenSpaces.filter(tokenSpace => {
+                // Check if the parent contains a ChallengeCard
                 const parentSlot = tokenSpace.container(Slot);
-                return parentSlot && parentSlot.has(ChallengeCard);
+                const hasChallenge = parentSlot && parentSlot.has(ChallengeCard);
+
+                if (hasChallenge) {
+                    // console.log('Found tokenSpace with challenge in slot:', parentSlot.name);
+                    // Check the children spaces
+                    const childSpaces = tokenSpace.all(Space);
+                    // console.log('Child spaces in this tokenSpace:', childSpaces.map(s => s.name));
+                }
+
+                return hasChallenge;
             }).flatMap(tokenSpace => {
-                // Retrieve only the empty children of 'tokenSpace' where space.name matches chosenToken.type
-                return tokenSpace.all(Space).filter(space => space.isEmpty() && space.name === chosenToken.type);
+                // Find the specific type space that matches the token (space names now include slot index)
+                const typeSpace = tokenSpace.all(Space).find(s => s.name.startsWith(chosenToken.type));
+                // console.log('Looking for space type:', chosenToken.type, 'Found:', typeSpace?.name);
+
+                if (typeSpace && typeSpace.isEmpty()) {
+                    return [typeSpace];
+                }
+                return [];
             });
+
+            // console.log('Valid spaces for token placement:', validSpaces.length);
+            return validSpaces;
         }).do(({ chosenToken, chosenSpace }) => {
-            if (player.resources >= chosenToken.quality && chosenToken.type === chosenSpace.name) {
-                // Reduce resources by the cost of the token
+            if (player.resources >= chosenToken.quality) {
                 player.resources -= chosenToken.quality;
-                console.log('chosenToken', chosenToken);
-                console.log('chosenSpace', chosenSpace);
-                // Move the token into the chosen space
+                // console.log('Moving token to space:', chosenSpace.name);
                 chosenToken.putInto(chosenSpace);
-                // Tell the player about it
-                game.message(`{{player}} played a {{token}} token on a challenge card.`,
-                    { player: player, token: chosenToken.type });
+
+                game.message(`{{player}} played a {{token}} token (quality {{quality}}) on a challenge card.`,
+                    { player: player, token: chosenToken.type, quality: chosenToken.quality });
             } else {
-                // Tell the player they can't afford it
-                game.message(`{{player}} does not have enough resources or the space does not match the token type.`,
-                    { player: player });
+                game.message(`{{player}} does not have enough resources (need {{cost}}, have {{resources}}).`,
+                    { player: player, cost: chosenToken.quality, resources: player.resources });
             }
         }),
 
@@ -627,7 +658,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
                 console.log("activechallenges", activeChallenges);
                 console.log("activestrategies", activeStrategies);
-                console.log("tokens", tokens);   
+                console.log("tokens", tokens);
 
 
                 if (passTest && uniqueTokenTypes.size >= 4) {
@@ -637,8 +668,23 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     // 2. Add the challenge 'points' field to the current score
                     player.score += challenge.points || 0;
 
-                    // 3. Move the challenge to the $.discarded space
-                    challenge.putInto($.discarded);
+                     // Update the ScoreCounter piece
+                    const scoreCounter = game.first(ScoreCounter);
+                    if (scoreCounter) {
+                        scoreCounter.value = player.score;
+                    }
+
+                    // 3. Move all tokens from this challenge to wastedResource FIRST
+                    const challengeSlot = challenge.container(Slot);
+                    if (challengeSlot) {
+                        const tokensOnChallenge = challengeSlot.all(Token);
+                        tokensOnChallenge.forEach(token => {
+                            token.putInto(player.my('wastedResource')!);
+                        });
+                    }
+
+                    // 4. Move the challenge to the $.discarded space
+                    challenge.putInto(player.my('challengeCompleted')!);
 
                     game.message(`{{player}} completed the challenge and earned {{points}} points.`,
                         { player: player, points: challenge.points });
@@ -710,47 +756,46 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     }
                 ]
             }),
-            loop(
-                whileLoop({
-                    // Outer loop runs until the current player wins or loses
-                    while: () =>
-                        game.players.current()!.status !== 'win' &&
-                        game.players.current()!.status !== 'lose',
-                    do: [
-                        eachPlayer({
-                            name: 'playerinturnphase',
-                            // Loop through each player's turn
-                            do: [
-                                // Subflow for playing a round (custom logic inside this subflow)
-                                ({playerinturnphase}) => Do.subflow('playround'),
 
-                                // Draw an event card and resolve it
-                                playerActions({
-                                    actions: ['drawEvent'],
-                                }),
+            whileLoop({
+                // Outer loop runs until the current player wins or loses
+                while: () =>
+                    game.players.current()!.status !== 'win' &&
+                    game.players.current()!.status !== 'lose',
+                do: [
+                    eachPlayer({
+                        name: 'playerinturnphase',
+                        // Loop through each player's turn
+                        do: [
+                            // Subflow for playing a round (custom logic inside this subflow)
+                            ({playerinturnphase}) => Do.subflow('playround'),
 
-                                // Check the player's status after the event
-                                playerActions({
-                                    actions: ['checkStatus'],
-                                }),
+                            // Draw an event card and resolve it
+                            playerActions({
+                                actions: ['drawEvent'],
+                            }),
 
-                                // Reset player's resources after their turn is complete, and allow stash next turn
-                                ({ playerinturnphase }) => {
-                                    playerinturnphase.resources = game.turnLimit;
-                                    playerinturnphase.stashedThisTurn = false; 
-                                },
-                            ],
-                            // Exit each player's turn if they win or lose
-                           
-                        }),
-                    ],
-                })
-            ),
+                            // Check the player's status after the event
+                            playerActions({
+                                actions: ['checkStatus'],
+                            }),
+
+                            // Reset player's resources after their turn is complete, and allow stash next turn
+                            ({ playerinturnphase }) => {
+                                playerinturnphase.resources = game.turnLimit;
+                                playerinturnphase.stashedThisTurn = false;
+                            },
+                        ],
+                        // Exit each player's turn if they win or lose
+
+                    }),
+                ],
+            }),
 
             /**
-             * 
+             *
              * Loop attempt...also doesnt work
-             * 
+             *
              * () => {
                 loop(
                     whileLoop({
@@ -773,12 +818,12 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                         ]
                     })
                     )}, // end of loop
-             * 
-             * 
-             * 
-             * 
-             * 
-             * 
+             *
+             *
+             *
+             *
+             *
+             *
             eachPlayer({
                 name: 'eventphase',
                 do: [
@@ -787,7 +832,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     })
                 ],
             }),
-            
+
             eachPlayer({
                 name: 'conditionCheckPhase',
                 do: [
@@ -799,7 +844,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 ],
             }), // end of this part of flow
             */
-        ) // End of flow definition 
+        ) // End of flow definition
 
 
     game.defineSubflow(
@@ -817,10 +862,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 playerActions({
                 actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'addChallengeCard', 'stashCard', 'skip']
                 })
-            ]   
+            ]
         })
     ); // end subflow
-    
+
 
 
 }); // END OF GAME DEFINITION
@@ -829,30 +874,30 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
 
 /**
- * 
+ *
             /**
              * Here add code to resolve the challenge cards and add them to the score
             (1) identify the activechallenges
             (2a) identify the requirements on those challenges, and (2b) whether or not the current strategycard contributions exceed those challenges,
-            (3) identify whether the tokenSpace on the challenge contains 4 tokens with different types. 
- 
-            If so, can we (1) set the challenge is_complete field to 'true', and (2) add the challenge 'points' field to the current score, and (3) move the challenge to the $.discarded space. 
- 
+            (3) identify whether the tokenSpace on the challenge contains 4 tokens with different types.
+
+            If so, can we (1) set the challenge is_complete field to 'true', and (2) add the challenge 'points' field to the current score, and (3) move the challenge to the $.discarded space.
+
                             // Check whether this event matches the requirements of the challenge
                             const matchingPrinciples = principlesData.filter(row =>
                                 row.eventValue < 0 &&
                                 row.challengeValue != null &&
                                 row.challengeValue > 0);
- 
+
                             // If match, check whether the event exceeds the activestrategies in play for the challenges
                             if (matchingPrinciples.length > 0) {
                                 const failTest = matchingPrinciples.filter(row => (row.eventValue + row.strategyValue) < 0);
                                 const passTest = matchingPrinciples.filter(row => (row.eventValue + row.strategyValue) >= 0);
- 
+
                                 if (failTest.length > 0) {
- 
+
                                     // Get the token values for each challenge
- 
+
                                     const allSlots = player.allMy(Slot, { group: 'challengeslot' });
                                     const riskedSlots = allSlots.filter(slot => slot.has(challenge));
                                     const riskedTokens = riskedSlots.all(Token);
@@ -862,7 +907,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                                     //riskedTokens.forEach(token => {
                                     //    tokenSum += token.quality;
                                     //});
- 
+
                                     console.log('tokensum', tokenSum);
                                     // Create an array to store the output from this loop
                                     // Store the results
@@ -875,14 +920,14 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                                 }
                             }
                         });
- 
+
                         if (results.length > 0) {
- 
+
                             // Identify the failing principles
                             const failingPrinciples = results.flatMap(result =>
                                 result.failTest.map(fail => fail.principle)
                             );
- 
+
                             // max event
                             const worstImpact = Math.max(...results.flatMap(result =>
                                 result.failTest.map(fail => fail.eventValue)
@@ -931,4 +976,3 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 // After the event round, players
 // 1. Check for completed challenges
 // 2. Adjust the score/damage markers and check win conditions
-
