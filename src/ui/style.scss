@@ -1,70 +1,459 @@
+// =======================
+// MAIN BACKGROUND
+// =======================
+#background {
+  // background: #020024;
+  background: linear-gradient(331deg,rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(81, 110, 143, 1) 71%, rgba(116, 179, 242, 1) 100%, rgba(0, 212, 255, 1) 98%);
+  // background-image: url("./background/1.jpg");
+}
+
+// =======================
+// Modals
+// =======================
+.modal-popup {
+  position: fixed !important;
+  z-index: 9999;
+  width: max-content;
+  max-width: 100%;
+  background: linear-gradient(135deg, #fcfc7e 0%, #9eb9c6 100%);
+  color: #002;
+  border-radius: 5px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  visibility: visible;
+  filter: none;
+  padding: 0.5rem;
+  box-shadow: 0.1rem 0.1rem 0.3rem rgba(0, 0, 0, 0.53);
+}
+
+// =======================
+// Score Display
+// =======================
+.scoreArea,
+[data-name="scoreArea"] {
+  display: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+// Hide the ScoreCounter piece itself
+.ScoreCounter,
+.bz-default[data-piece="scoreCounter"] {
+  display: none !important;
+}
+
+.score-display {
+  background: linear-gradient(135deg, #ffffff 0%, #dbdbdb 100%);
+  border: 1px solid #333;
+  font-size: 0.25em;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 5px;
+  padding: 0.2em;
+  position: fixed !important;
+  top: 1em;
+  left: 0.1em;
+  width: 7em !important;
+  height: auto !important;
+  z-index: 100;
+  display: flex;
+  justify-content: left;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.2em;
+}
+
+// =======================
+// Player Controls
+// =======================
+#game .player-controls {
+  position: fixed;
+  width: auto;
+  bottom: 0;
+  left: 0;
+  padding: 0.2rem;
+  font-size: 0.5rem;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+// =======================
+// Play Area & Tokens
+// =======================
 #play-area {
-    .Token {
-        perspective: 1000px;
-        z-index: 2000;
+  position: relative;
+  width: 130% !important;
+  height: 100% !important;
 
-        .flipper {
-            width: 100%;
-            height: 100%;
-            transition: 0.6s;
-            transform-style: preserve-3d;
-            position: relative;
-            overflow: hidden;
-            align-items: center;
-            justify-content: center;
+  .Token {
+    perspective: 1000px;
+    z-index: 200;
+    max-width: 7em;
+    max-height: 7em;
 
-            .front, .back {
-                display: flex; /* Enable centering */
-                align-items: center; /* Vertically center the text */
-                justify-content: center; /* Horizontally center the text */
-                text-align: center; /* Align multi-line text */
-                font-size: 2em;
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                border-radius: 10%;
-                border: .3em solid black;
-                backface-visibility: hidden;
+    .flipper {
+      max-width: 7em;
+      max-height: 7em;
+      border-radius: 50%;
+      transition: 0.6s;
+      transform-style: preserve-3d;
+      position: relative;
+      overflow: hidden;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1;
 
-                html.dark & {
-                    border: .3em solid rgb(164, 164, 164);
-                }
-            }
-            /* front pane, placed above back */
-            .front {
-                z-index: 2;
-                background: #333;
-                color: white;
-                /* for firefox 31 */
-                transform: rotateY(0deg);
-            }
-            /* back, initially hidden pane */
-            .back {
-                background: #333;
-                transform: rotateY(180deg);
-            }
+      .front, .back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 1.7em;
+        font-weight: bold;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 0.3em solid #ffc400;
+        backface-visibility: hidden;
+        box-sizing: border-box;
+
+        html.dark & {
+          border: 0.3em solid rgb(164, 164, 164);
         }
-        /* flip the pane when hovered */
-        &:not([data-name]) .flipper {
-            transform: rotateY(180deg);
-        }
+      }
 
-        &[data-color=blue] .front {
-            background: blue;
+      .front {
+        z-index: 2;
+        background: linear-gradient(135deg, #fcfc7e 0%, #ffd414 100%);
+        color: rgb(0, 0, 0);
+        transform: rotateY(0deg);
+      }
 
-            html.dark & {
-                background: rgb(13, 13, 115);
-            }
-        }
-
-        &[data-color=red] .front {
-            background: red;
-
-            html.dark & {
-                background: rgb(115, 13, 13);
-            }
-        }
+      .back {
+        background: #333333;
+        transform: rotateY(180deg);
+      }
     }
+
+    &:not([data-name]) .flipper {
+      transform: rotateY(180deg);
+    }
+
+    &[data-color=blue] .front {
+      background: blue;
+      html.dark & {
+        background: rgb(13, 13, 115);
+      }
+    }
+
+    &[data-color=red] .front {
+      background: red;
+      html.dark & {
+        background: rgb(115, 13, 13);
+      }
+    }
+    &.in-slot {
+      max-width: 7em !important;
+      max-height: 7em !important;
+
+      .flipper {
+        max-width: 7em !important;
+        max-height: 7em !important;
+        font-size: 1em; // Smaller font for slot tokens
+      }
+    }
+  }
+}
+
+// =======================
+// Token Slots
+// =======================
+.token-type-space {
+  width: 60px;
+  height: 60px;
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.1);
+
+  .type-label {
+    font-size: 0.8em;
+    opacity: 0.5;
+  }
+
+  // &[data-type="Data"] { background: rgba(0, 100, 255, 0.1); }
+  // &[data-type="Method"] { background: rgba(255, 100, 0, 0.1); }
+  // &[data-type="User"] { background: rgba(0, 255, 100, 0.1); }
+  // &[data-type="Aim"] { background: rgba(255, 0, 100, 0.1); }
+}
+
+// .transform-wrapper .Piece.Token {
+//   width: 12px !important;
+//   height: 12px !important;
+//   max-width: 15px !important;
+//   max-height: 15px !important;
+//   font-size: 10px !important; /* shrink text */
+
+//   .layout-wrapper [data-name="wastedResource"]{
+//     top: 20px !important; /* push down from top so it doesn't cover title */
+//   }
+// }
+
+.Space[data-name="discarded"] .transform-wrapper,
+.Space[data-name="wastedResource"] .transform-wrapper,
+.Space[data-name="discarded"] .transform-wrapper,
+.Space[data-name="challengeCompleted"] .transform-wrapper {
+  max-width: 19vh !important;
+  max-height: 17vh !important;
+  font-size: 0.5em !important;
+  top: 10vh !important;
+}
+
+.Space[data-name="wastedResource"] .transform-wrapper {
+  max-width: 19vh !important;
+  max-height: 17vh !important;
+  font-size: 0.5em !important;
+  top: 5vh !important;
+}
+
+.Slot[data-group="challengeslot"] {
+  position: relative !important;
+  min-width: 150px;
+  min-height: 150px;
+
+  // ChallengeCard fills the slot
+  .ChallengeCard {
+    position: absolute !important;
+    //top: 0;
+    //left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 15vh;
+    max-height: 15vh;
+    z-index: 1;
+    //transform: scale(1); /* prevent scaling */
+    //transform-origin: top left; /* align correctly */
+  }
+
+  // tokenSpace overlays on top
+  .Space[data-name="tokenSpace"],
+  [data-name="tokenSpace"] {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 15vh;
+    max-height: 15vh;
+    z-index: 10;
+    //pointer-events: none; // Allow clicks to pass through to challenge card
+
+    // Re-enable pointer events for token spaces
+    > * {
+      pointer-events: auto;
+    }
+  }
+
+  .bz-default {
+    background: transparent !important;
+  }
+
+  .token-space-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .Token {
+    width: 40px !important;
+    height: 40px !important;
+    z-index: 20;
+
+    .flipper {
+      width: 40px !important;
+      height: 40px !important;
+      font-size: 0.6em;
+    }
+  }
+}
+
+// =======================
+// Challenge Deck & Cards
+// =======================
+.challengeDeck {
+  position: relative;
+
+  &::before {
+    content: "Challenge Deck";
+    position: absolute;
+    top: -2em;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #333;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.2em;
+    border-radius: 4px;
+    z-index: 10;
+  }
+}
+
+.challenge-card {
+  background: linear-gradient(135deg, #748bf1 0%, #141998ae 100%);
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  h3 { margin: 0; font-size: 1.2em; }
+  h4 { margin: 0; font-size: 1em; }
+  p { margin: 5px 0; }
+}
+
+// =======================
+// Strategy Deck & Cards
+// =======================
+.strategyDeck {
+  position: relative;
+
+  &::before {
+    content: "Strategy Deck";
+    position: absolute;
+    top: -1.5em;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #333;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0.2em;
+    border-radius: 4px;
+    z-index: 10;
+  }
+}
+
+.Piece.StrategyCard {
+  background: linear-gradient(135deg, #136629 0%, #05360c83 100%);
+  color: #fff;
+  padding: 5px; // Changed from 1px to 5px for better spacing
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; // Add this to clip overflowing content
+  box-sizing: border-box; // Add this to include padding in dimensions
+
+  h3 { margin: 0; font-size: 1.2em; }
+  h4 { margin: 0; font-size: 1em; }
+  p {
+    margin: 0;
+    font-size: 0.7em;  // Slightly smaller to fit better
+    padding: 0 3px;    // Increased padding
+    text-align: center;
+    word-wrap: break-word;
+    overflow-wrap: break-word; // Add this for better word breaking
+    max-width: 100%; // Ensure text doesn't exceed card width
+    line-height: 1.2; // Add line height for better readability
+  }
+}
+
+// =======================
+// Event Deck & Cards
+// =======================
+// .EventDeck {
+//   position: relative;
+
+//   &::before {
+//     content: "Event Deck";
+//     position: absolute;
+//     top: -1.5em;
+//     left: 0;
+//     right: 0;
+//     text-align: center;
+//     font-weight: bold;
+//     font-size: 0.9em;
+//     color: #333;
+//     background: rgba(255, 255, 255, 0.9);
+//     padding: 0.2em;
+//     border-radius: 4px;
+//     z-index: 10;
+//   }
+// }
+.event-deck-container, .active-strategies-container {
+  background: linear-gradient(135deg, #ffffff70 100%, #6e6d6d69 0%);
+  border-radius: 8px;
+  padding: 10px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: top;
+  justify-content: center;
+
+  h4 {
+    margin: 0;
+    color: rgb(0, 0, 0);
+    font-size: 1.2em;
+  }
+}
+
+.Piece.EventCard {
+  background: linear-gradient(135deg, #512274 0%, #800bf478 100%);
+  color: #fff;
+  padding: 1px;
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  h3 { margin: 0; font-size: 1.2em; }
+  h4 { margin: 0; font-size: 1em; }
+  p { margin: 0; font-size: 0.8em; }
+}
+
+.completed-challenges-area,
+.wasted-resources-area,
+.discarded-area {
+  border: 2px dashed rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .area-label {
+    color: #000000;
+    font-size: 0.6em;
+    font-weight: bold;
+  }
+}
+
+.wasted-resources-area,
+.discarded-area {
+  background: rgba(255, 0, 0, 0.247);
+}
+
+.completed-challenges-area {
+  background: rgba(0, 255, 0, 0.162);
 }
