@@ -21,6 +21,10 @@ netstat -ano | findstr ":80"
 taskkill /PID  /F
 ```
 
+If needed, check:
+```bash
+npm install
+```
 
 ## To do
 
