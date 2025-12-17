@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, numberSetting, Space } from '@boardzilla/core';
+import { render, numberSetting, Space, PieceGrid, ProfileBadge, toggleSetting, times } from '@boardzilla/core';
+import { Flippable } from '@boardzilla/core/components';
 import setup from '../game/index.js';
 import { Token, ScoreCounter, Slot } from '../game/pieces/index.ts';
 import { ChallengeCard } from '../game/pieces/challenges.ts';
@@ -12,7 +13,11 @@ render(setup, {
   settings: {
     //tokens: numberSetting('Number of tokens', 4, 24),
   },
-  layout: game => {
+    layout: game => {
+
+    // turn off debug layout
+        game.disableDefaultAppearance();
+
     // ---------------- Tokens ----------------
     game.all(Token).appearance({
       aspectRatio: 0.8,
@@ -36,7 +41,7 @@ render(setup, {
 
     // Layout tokens within each type space
     game.all('Data', 'Method', 'User', 'Aim').layout(Token, {
-      alignment: 'center'
+        alignment: 'center',
     });
 
     game.all('pool').appearance({
@@ -50,36 +55,56 @@ render(setup, {
 
     game.all('pool').layout(Token, {
       rows: 3,
-      gap: 1,
-      margin: 1
+      gap: 0,
+      margin: 0,
     });
 
     // ---------------- Challenge Deck & Cards ----------------
-    game.all(ChallengeCard).appearance({
-      aspectRatio: 0,
-      render: (card) => (
-        <div className="challenge-card">
-          <h4>Challenge</h4>
-          <p>{card.problem}</p>
-        </div>
-      )
-    });
+      game.all(ChallengeCard).appearance({
+          aspectRatio: 0,
+          render: (card) => (
+              <div className="challenge-card">
+                  <h4>Challenge</h4>
+                  <p>{card.problem}</p>
+              </div>
+          )
+      });
 
-    game.all('challengeDeck').appearance({
-      aspectRatio: 0,
-      render: () => (
-        <div className="challenge-deck-container">
-          <span className="area-label">Challenges</span>
-        </div>
-      )
-    });
+      game.all('challengeDeck').appearance({
+          aspectRatio: 0,
+          render: () => (
+              <div className="challenge-deck-container">
+                  <span className="area-label">Challenges</span>
+              </div>
+          )
+      });
 
-    game.all('challengeDeck').layout(ChallengeCard, {
-      rows: 3,
-      columns: 2,
-      gap: 0.5,
-    });
 
+      
+      // Layout cards inside the drawer
+      game.all('challengeDeck')!.layout(ChallengeCard, {
+          rows: 3,
+          columns: 2,
+          gap: 0.5,
+          margin: 0.5
+      });
+
+
+        // Create the drawer
+        //This doesn't work. And it would need an OR in the openIf/closeIf for stashing a challenge.
+    //  game.layoutAsDrawer('challengeDeck', {
+    //     area: {
+    //          top: 60,
+    //          left: 30,
+    //         width: 40,
+    //         height: 40,
+    //      },
+    //      openDirection: 'up',
+    //      tab: () => `Challenge Deck (${game.all('challengeDeck')!.all(ChallengeCard).length})`,
+    //      openIf: actions => actions.some(a => a.name === 'addChallenge'),
+    //      closeIf: actions => actions.every(a => a.name !== 'addChallenge'),
+    //  });
+     
     game.all('challengeSpace').appearance({
       aspectRatio: 0,
       render: () => (
@@ -289,7 +314,8 @@ render(setup, {
     game.all('wastedResource').layout(Token, {
       rows: {max: 1},
       offsetColumn: {x: 5, y: 5},
-      direction: 'ltr',
+        direction: 'ltr',
+        haphazardly: 3,
     });
   }
 });
