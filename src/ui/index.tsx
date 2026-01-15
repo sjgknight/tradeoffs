@@ -51,8 +51,8 @@ render(setup, {
 
   layout: (game) => {
 
-//to remove after development
-    game.showLayoutBoundingBoxes()
+// to remove after development
+   // game.showLayoutBoundingBoxes()
 
 
     // turn off debug layout
@@ -125,16 +125,36 @@ render(setup, {
     // ============================================
     // Token layout
     // ============================================
-    // ---------------- Tokens ----------------
-    game.all(Token).appearance({
-      aspectRatio: 0.8,
-      render: (Token) => (
-        <div className="flipper">
-          <div className="front">{Token.type}<br></br>{Token.quality}</div>
-          <div className="back"></div>
-        </div>
-      )
-    });
+      // ---------------- Tokens ----------------
+      // Helper function for token icons
+      function getTokenIcon(type: string): string {
+          const icons: Record<string, string> = {
+              'Data': '📊',
+              'Method': '⚙️',
+              'User': '👤',
+              'Aim': '🎯'
+          };
+          return icons[type] || '●';
+      }
+
+      game.all(Token).appearance({
+          aspectRatio: 1,
+          render: (token) => (
+              <div className="flipper">
+                  <div className="front">
+                      <div className="token-icon">{getTokenIcon(token.type)}/n</div>
+                      <div className="token-type">{token.type}br</div>
+                      <div className="token-quality">
+                          {Array.from({ length: token.quality }).map((_, i) => (
+                              <span key={i} className="quality-pip">●</span>
+                          ))}
+                      </div>
+                  </div>
+                  <div className="back">?</div>
+              </div>
+          )
+      });
+
 
     // Style the individual token type spaces to be visible for debugging
     game.all('Data', 'Method', 'User', 'Aim').appearance({
@@ -255,11 +275,14 @@ game.all(ChallengeCard).appearance({
   },
 */
 
+  
       game.all('challengeDeck').appearance({
-          aspectRatio: .7,
+          aspectRatio: 0.7,
           render: () => (
-              <div className="challenge-deck-container">
+              <div className="challenge-deck-container deck-container">
+                  <div className="deck-icon">📚</div>
                   <span className="area-label">Challenges</span>
+                  <span className="deck-count">{game.all('challengeDeck')!.all(ChallengeCard).length}</span>
               </div>
           )
       });
@@ -409,7 +432,7 @@ game.layout('challengeSpace', {
     game.all('tokenSpace').appearance({
       aspectRatio: 0,
       render: () => (
-        <div className="token-space-overlay" />
+          <div className="token-space-overlay" />
       )
     });
 
@@ -420,6 +443,35 @@ game.layout('challengeSpace', {
       gap: 0.2,
     });
 
+      // Apply an appearance to all spaces that match the pattern Type-Number
+      game.all(Space).filter(space => space.name.includes('-')).appearance({
+          aspectRatio: 1,
+          render: (space) => {
+              const [spaceType] = space.name.split('-');
+              const isEmpty = space.isEmpty();
+              const icon = getTokenIcon(spaceType);
+              return (
+                  <div
+                      className="token-type-space clickable"
+                      data-space-name={space.name}
+                      style={{
+                          width: '100%',
+                          height: '100%',
+                          border: '2px dashed var(--border-dashed)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          pointerEvents: 'auto',
+                          background: space.isEmpty() ? 'rgba(255,255,255,0.1)' : 'rgba(0,255,0,0.2)'
+                      }}
+                  >
+                      {space.isEmpty() && <span className="type-label">{spaceType}</span>}
+                  </div>
+              );
+          }
+      });
 
     // ---------------- Strategy Cards ----------------
     game.all('strategyDeck').appearance({
@@ -465,14 +517,20 @@ game.layout('challengeSpace', {
     });
 
     // ---------------- Event Deck & Cards ----------------
-    game.all(EventCard).appearance({
-      aspectRatio: .66,
-      render: (card) => (
-        <div className="event-card">
-          <h3>{card.type}</h3>
-        </div>
-      )
-    });
+      game.all(EventCard).appearance({
+          aspectRatio: 0.66,
+          render: (card) => (
+              <div className="event-card">
+                  <div className="event-header">
+                      <span className="event-icon">⚠️</span>
+                  </div>
+                  <h3 className="card-type">{card.type}</h3>
+                  {card.description && (
+                      <p className="event-description">{card.description}</p>
+                  )}
+              </div>
+          )
+      });
 
     // Add this after the EventCard appearance definition
     game.all('eventDeck').appearance({
@@ -495,15 +553,30 @@ game.layout('challengeSpace', {
     });
 
     // ---------------- Score ----------------
-    game.appearance({
-      render: () => (
-        <div className="score-display">
-     <div>Score: {game.players[0]?.score || 0}/{game.wincondition}</div>
-     <div>Resources: {game.players[0]?.resources || 0}</div>
-     <div>Wasted resource: {game.players[0]?.damage || 0}/{game.losecondition}</div>
-   </div>
-      )
-    });
+   
+      game.appearance({
+          render: () => (
+              <div className="score-display">
+                  <div className="score-item">
+                      <span className="score-icon">🏆</span>
+                      <span className="score-label">Score: </span>
+                      <span className="score-value">{game.players[0]?.score || 0}/{game.wincondition}</span>
+                  </div>
+
+                  <div className="score-item">
+                      <span className="score-icon">💎</span>
+                      <span className="score-label">Resources: </span>
+                      <span className="score-value">{game.players[0]?.resources || 0}</span>
+                  </div>
+
+                  <div className="score-item danger">
+                      <span className="score-icon">💀</span>
+                      <span className="score-label">Wasted: </span>
+                      <span className="score-value">{game.players[0]?.damage || 0}/{game.losecondition}</span>
+                  </div>
+              </div>
+          )
+      });
 
     // // Background for score area
     // game.all('scoreArea').appearance({
@@ -584,3 +657,39 @@ game.layout('challengeSpace', {
 	
   }
 });
+
+
+/* useful for debugging elements 
+
+
+      // In your UI layout
+      game.all(Space).appearance({
+          aspectRatio: 0,
+          render: (space) => {
+              // Only render for type spaces (Data-1, Method-2, etc.)
+              if (!space.name.includes('-')) return null;
+
+              const [spaceType] = space.name.split('-');
+              const isEmpty = space.isEmpty();
+
+              return (
+                  <div
+                      className={`token-type-space ${isEmpty ? 'empty' : 'filled'}`}
+                      data-type={spaceType}
+                      style={{
+                          minWidth: '40px',
+                          minHeight: '40px',
+                          border: '2px dashed var(--border-dashed)',
+                          borderRadius: '50%',
+                          cursor: isEmpty ? 'pointer' : 'default',
+                          position: 'relative',
+                          zIndex: 20
+                      }}
+                  >
+                      {isEmpty && <span className="type-label">{spaceType}</span>}
+                  </div>
+              );
+          }
+      });
+
+*/

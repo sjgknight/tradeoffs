@@ -579,10 +579,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         }), // End of the action call
 
         playInnovation: player => action({
-            prompt: 'Play an innovation token on a challenge card',
+            prompt: 'Play an innovation token on a challenge card', // first choose a token
         }).chooseOnBoard(
             'chosenToken', player.my('pool')!.all(Token)
-        ).chooseOnBoard('chosenSpace', ({ chosenToken }) => {
+        ).chooseOnBoard('chosenSpace', ({ chosenToken }) => { // then choose the space to play it in
             const allTokenSpaces = game.all(Space, 'tokenSpace');
             // console.log('All tokenSpaces found:', allTokenSpaces.length);
 
@@ -600,17 +600,19 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
                 return hasChallenge;
             }).flatMap(tokenSpace => {
-                // Find the specific type space that matches the token (space names now include slot index)
-                const typeSpace = tokenSpace.all(Space).find(s => s.name.startsWith(chosenToken.type));
-                // console.log('Looking for space type:', chosenToken.type, 'Found:', typeSpace?.name);
+                const childSpaces = tokenSpace.all(Space);
+                console.log('Child spaces in tokenSpace:', childSpaces.map(s => s.name));
 
-                if (typeSpace && typeSpace.isEmpty()) {
-                    return [typeSpace];
-                }
-                return [];
+                // Find spaces that match the token type and are empty
+                return childSpaces.filter(childSpace => {
+                    const matchesType = childSpace.name.startsWith(chosenToken.type);
+                    const isEmpty = childSpace.isEmpty();
+                    console.log(`Space ${childSpace.name}: matchesType=${matchesType}, isEmpty=${isEmpty}`);
+                    return matchesType && isEmpty;
+                });
             });
 
-            // console.log('Valid spaces for token placement:', validSpaces.length);
+            console.log('Valid spaces for placement:', validSpaces.length, validSpaces.map(s => s.name));
             return validSpaces;
         }).do(({ chosenToken, chosenSpace }) => {
             if (player.resources >= chosenToken.quality) {
@@ -712,9 +714,10 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 }
             });
 
-            // was called wastedTokens 
+            // track how many tokens we wasted
             const wastedTokens = player.my('wastedResource')!.all(Token).length;
 
+            // Add wasted tokens to overall damage to track lose condition
             player.damage += wastedTokens;
 
             console.log("damage is:", player.damage)
