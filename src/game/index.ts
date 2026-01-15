@@ -712,20 +712,24 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 }
             });
 
+            // was called wastedTokens 
             const wastedTokens = player.my('wastedResource')!.all(Token).length;
 
+            player.damage += wastedTokens;
+
+            console.log("damage is:", player.damage)
             // Check win/lose conditions
             if (player.score >= game.wincondition) {
                 game.message(`{{player}} wins the game!`, { player: player });
                 player.status = 'win';
                 game.finish(player);
                 // send to a winner flow;
-            } else if (wastedTokens >= game.losecondition || player.my('pool')!.all(Token).length < 4 || game.round > game.maxRounds) {
+            } else if (player.damage >= game.losecondition || player.my('pool')!.all(Token).length < 4 || game.round > game.maxRounds) {
                 game.message(`{{player}} loses the game!`, { player: player });
                 player.status = 'lose';
                 // send to a loser flow
             } else if (game.round <= game.maxRounds) {
-                game.message(`{{player}} proceeds to the next round with {{ score }} and resource {{ resource }}.`, { player: player, score: player.score, resource: player.resources });
+                game.message(`{{player}} proceeds to the next round with {{ score }} and resource {{ resource }}, but wasted resource of {{ damage }}.`, { player: player, score: player.score, resource: player.resources, damage: player.damage });
                 game.round += 1;
                 //return game.x(); // here I thought I could refer people back to my flow phase, but perhaps I need to have a separate choices action to refer people to...this seems overkill?
 

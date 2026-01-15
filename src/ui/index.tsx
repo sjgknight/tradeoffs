@@ -500,6 +500,7 @@ game.layout('challengeSpace', {
         <div className="score-display">
      <div>Score: {game.players[0]?.score || 0}/{game.wincondition}</div>
      <div>Resources: {game.players[0]?.resources || 0}</div>
+     <div>Wasted resource: {game.players[0]?.damage || 0}/{game.losecondition}</div>
    </div>
       )
     });
