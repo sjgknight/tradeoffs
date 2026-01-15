@@ -1,31 +1,59 @@
 // =======================
-// MAIN BACKGROUND
+// CSS VARIABLES (Design System)
 // =======================
-#background {
-  // background: #020024;
-  background: #f2f6f9; 
-  // background: linear-gradient(331deg,rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(81, 110, 143, 1) 71%, rgba(116, 179, 242, 1) 100%, rgba(0, 212, 255, 1) 98%);
-  // background-image: url("./background/1.jpg");
+:root {
+  /* neutrals */
+  --bg-main: #F6F5F2;
+  --bg-secondary: #E7E5E0;
+  --card-bg: #FFFFFF;
+  --wire-bg: #EEF1F4;
+
+  --text-primary: #2B2B2B;
+  --text-secondary: #6E6E73;
+
+  --border-soft: rgba(0,0,0,0.08);
+  --border-dashed: rgba(0,0,0,0.12);
+
+  /* system colours */
+  --innovate: #1F6F78;   /* teal */
+  --regulate: #3E4C77;   /* indigo */
+  --event: #C9A227;      /* ochre */
+  --risk: #A94442;       /* brick */
+  --resource: #5F7F5B;   /* moss */
+
+  /* feedback */
+  --success: #4F8A6F;
+  --focus: #D6E4F0;
 }
 
 // =======================
-// Modals (which game elements does this apply to?)
+// MAIN BACKGROUND
+// =======================
+#background {
+  background: var(--bg-main);
+}
+
+// =======================
+// Modals
 // =======================
 .modal-popup {
   position: fixed !important;
   z-index: 9999;
   width: max-content;
   max-width: 100%;
-  background: linear-gradient(135deg, #fcfc7e 0%, #9eb9c6 100%);
-  color: #002;
-  border-radius: 5px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border-radius: 1em;
+  border: .1em solid var(--border-soft);
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   visibility: visible;
   filter: none;
-  padding: 0.5rem;
-  box-shadow: 0.1rem 0.1rem 0.3rem rgba(0, 0, 0, 0.53);
+  padding: 18px;
+  box-shadow: 
+    0 14px 36px rgba(0,0,0,0.10),
+    0 4px 10px rgba(0,0,0,0.05);
 }
 
 // =======================
@@ -39,20 +67,19 @@
   height: 0 !important;
 }
 
-// Hide the ScoreCounter piece itself
 .ScoreCounter,
 .bz-default[data-piece="scoreCounter"] {
   display: none !important;
 }
 
 .score-display {
-  background: linear-gradient(135deg, #ffffff 0%, #dbdbdb 100%);
-  border: 1px solid #333;
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
   font-size: 0.25em;
-  font-weight: bold;
+  font-weight: 700;
   text-align: center;
-  border-radius: 5px;
-  padding: 0.2em;
+  border-radius: 8px;
+  padding: 12px;
   position: fixed !important;
   top: 1em;
   left: 0.1em;
@@ -63,7 +90,8 @@
   justify-content: left;
   align-items: flex-start;
   flex-direction: column;
-  gap: 0.2em;
+  gap: 0.4em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
 // =======================
@@ -74,9 +102,11 @@
   width: auto;
   bottom: 0;
   left: 0;
-  padding: 0.2rem;
-  font-size: 0.5rem;
-  background: rgba(255, 255, 255, 0.8);
+  padding: 1em;
+  font-size: 0.5em;
+  background: var(--card-bg);
+  border: .1em solid var(--border-soft);
+  border-radius: .5em .5em 0 0;
 }
 
 // =======================
@@ -97,7 +127,7 @@
       max-width: 7em;
       max-height: 7em;
       border-radius: 50%;
-      transition: 0.6s;
+      transition: 0.6s cubic-bezier(.2,.8,.2,1);
       transform-style: preserve-3d;
       position: relative;
       overflow: hidden;
@@ -111,31 +141,31 @@
         justify-content: center;
         text-align: center;
         font-size: 1.7em;
-        font-weight: bold;
+        font-weight: 700;
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         border-radius: 50%;
-        border: 0.3em solid #ffc400;
+        border: 0.3em solid var(--event);
         backface-visibility: hidden;
         box-sizing: border-box;
 
         html.dark & {
-          border: 0.3em solid rgb(164, 164, 164);
+          border: 0.3em solid #A0A0A0;
         }
       }
 
       .front {
         z-index: 2;
-        background: linear-gradient(135deg, #fcfc7e 0%, #ffd414 100%);
-        color: rgb(0, 0, 0);
+        background: linear-gradient(135deg, #FFF4D4 0%, var(--event) 100%);
+        color: var(--text-primary);
         transform: rotateY(0deg);
       }
 
       .back {
-        background: #333333;
+        background: var(--text-secondary);
         transform: rotateY(180deg);
       }
     }
@@ -145,18 +175,23 @@
     }
 
     &[data-color=blue] .front {
-      background: blue;
+      background: linear-gradient(135deg, #D6E4F0 0%, var(--innovate) 100%);
+      border-color: var(--innovate);
+      
       html.dark & {
-        background: rgb(13, 13, 115);
+        background: linear-gradient(135deg, #1F3A44 0%, #0D2933 100%);
       }
     }
 
     &[data-color=red] .front {
-      background: red;
+      background: linear-gradient(135deg, #F4D6D6 0%, var(--risk) 100%);
+      border-color: var(--risk);
+      
       html.dark & {
-        background: rgb(115, 13, 13);
+        background: linear-gradient(135deg, #4A2222 0%, #331616 100%);
       }
     }
+
     &.in-slot {
       max-width: 7em !important;
       max-height: 7em !important;
@@ -164,7 +199,7 @@
       .flipper {
         max-width: 7em !important;
         max-height: 7em !important;
-        font-size: 1em; // Smaller font for slot tokens
+        font-size: 1em;
       }
     }
   }
@@ -176,39 +211,22 @@
 .token-type-space {
   width: 60px;
   height: 60px;
-  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border: 2px dashed var(--border-dashed);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.5);
 
   .type-label {
     font-size: 0.8em;
-    opacity: 0.5;
+    color: var(--text-secondary);
+    opacity: 0.7;
   }
-
-  // &[data-type="Data"] { background: rgba(0, 100, 255, 0.1); }
-  // &[data-type="Method"] { background: rgba(255, 100, 0, 0.1); }
-  // &[data-type="User"] { background: rgba(0, 255, 100, 0.1); }
-  // &[data-type="Aim"] { background: rgba(255, 0, 100, 0.1); }
 }
-
-// .transform-wrapper .Piece.Token {
-//   width: 12px !important;
-//   height: 12px !important;
-//   max-width: 15px !important;
-//   max-height: 15px !important;
-//   font-size: 10px !important; /* shrink text */
-
-//   .layout-wrapper [data-name="wastedResource"]{
-//     top: 20px !important; /* push down from top so it doesn't cover title */
-//   }
-// }
 
 .Space[data-name="discarded"] .transform-wrapper,
 .Space[data-name="wastedResource"] .transform-wrapper,
-.Space[data-name="discarded"] .transform-wrapper,
 .Space[data-name="challengeCompleted"] .transform-wrapper {
   max-width: 19vh !important;
   max-height: 17vh !important;
@@ -225,24 +243,16 @@
 
 .Slot[data-group="challengeslot"] {
   position: relative !important;
-  min-width: 150px;
-  min-height: 150px;
 
-  // ChallengeCard fills the slot
   .ChallengeCard {
     position: absolute !important;
-    //top: 0;
-    //left: 0;
     width: 100% !important;
     height: 100% !important;
     max-width: 15vh;
     max-height: 15vh;
     z-index: 1;
-    //transform: scale(1); /* prevent scaling */
-    //transform-origin: top left; /* align correctly */
   }
 
-  // tokenSpace overlays on top
   .Space[data-name="tokenSpace"],
   [data-name="tokenSpace"] {
     position: absolute !important;
@@ -252,10 +262,8 @@
     height: 100% !important;
     max-width: 15vh;
     max-height: 15vh;
-    z-index: 10;
-    //pointer-events: none; // Allow clicks to pass through to challenge card
+    z-index: 10000;
 
-    // Re-enable pointer events for token spaces
     > * {
       pointer-events: auto;
     }
@@ -299,12 +307,13 @@
     left: 0;
     right: 0;
     text-align: center;
-    font-weight: bold;
+    font-weight: 700;
     font-size: 0.9em;
-    color: #333;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 0.2em;
-    border-radius: 4px;
+    color: var(--text-primary);
+    background: var(--card-bg);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-soft);
     z-index: 10;
   }
 }
@@ -314,20 +323,35 @@
 }
 
 .challenge-card {
-  background: linear-gradient(135deg, #748bf1 0%, #141998ae 100%);
+  background: linear-gradient(135deg, #E8EEFF 0%, var(--innovate) 100%);
   color: white;
-  padding: 10px;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  border-left: 0.2em solid var(--innovate);
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
 
-  h3 { margin: 0; font-size: 1.2em; }
-  h4 { margin: 0; font-size: 1em; }
-  p { margin: 5px 0; }
+  h3 { 
+    margin: 0; 
+    font-size: 1.05em; 
+    font-weight: 700; 
+  }
+  
+  h4 { 
+    margin: 0; 
+    font-size: 0.95em; 
+  }
+  
+  p { 
+    margin: 8px 0; 
+    line-height: 1.35; 
+  }
 }
 
 // =======================
@@ -343,122 +367,224 @@
     left: 0;
     right: 0;
     text-align: center;
-    font-weight: bold;
+    font-weight: 700;
     font-size: 0.9em;
-    color: #333;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 0.2em;
-    border-radius: 4px;
+    color: var(--text-primary);
+    background: var(--card-bg);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-soft);
     z-index: 10;
   }
 }
 
 .Piece.StrategyCard {
-  background: linear-gradient(135deg, #136629 0%, #05360c83 100%);
+  background: linear-gradient(135deg, #E8F4E8 0%, var(--resource) 100%);
   color: #fff;
-  padding: 5px; // Changed from 1px to 5px for better spacing
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  border-top: 0.15em solid var(--regulate);
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  overflow: hidden; // Add this to clip overflowing content
-  box-sizing: border-box; // Add this to include padding in dimensions
+  overflow: hidden;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 
-  h3 { margin: 0; font-size: 1.2em; }
-  h4 { margin: 0; font-size: 1em; }
+  h3 { 
+    margin: 0; 
+    font-size: 1.05em; 
+    font-weight: 700; 
+  }
+  
+  h4 { 
+    margin: 0; 
+    font-size: 0.95em; 
+  }
+  
   p {
     margin: 0;
-    font-size: 0.7em;  // Slightly smaller to fit better
-    padding: 0 3px;    // Increased padding
+    font-size: 0.85em;
+    padding: 0 8px;
     text-align: center;
     word-wrap: break-word;
-    overflow-wrap: break-word; // Add this for better word breaking
-    max-width: 100%; // Ensure text doesn't exceed card width
-    line-height: 1.2; // Add line height for better readability
+    overflow-wrap: break-word;
+    max-width: 100%;
+    line-height: 1.35;
   }
 }
 
 // =======================
 // Event Deck & Cards
 // =======================
-// .EventDeck {
-//   position: relative;
-
-//   &::before {
-//     content: "Event Deck";
-//     position: absolute;
-//     top: -1.5em;
-//     left: 0;
-//     right: 0;
-//     text-align: center;
-//     font-weight: bold;
-//     font-size: 0.9em;
-//     color: #333;
-//     background: rgba(255, 255, 255, 0.9);
-//     padding: 0.2em;
-//     border-radius: 4px;
-//     z-index: 10;
-//   }
-// }
 .event-deck-container, .active-strategies-container {
-  background: linear-gradient(135deg, #ffffff70 100%, #6e6d6d69 0%);
-  border-radius: 8px;
-  padding: 10px;
+  background: var(--wire-bg);
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  padding: 12px;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: top;
   justify-content: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 
   h4 {
     margin: 0;
-    color: rgb(0, 0, 0);
-    font-size: 1.2em;
+    color: var(--text-primary);
+    font-size: 0.95em;
+    font-weight: 700;
   }
 }
 
 .Piece.EventCard {
-  background: linear-gradient(135deg, #512274 0%, #800bf478 100%);
+  background: linear-gradient(135deg, #F4E8F4 0%, var(--event) 100%);
   color: #fff;
-  padding: 1px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  border-left: 0.2em solid var(--event);
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 .2em .4em rgba(0,0,0,0.03);
 
-  h3 { margin: 0; font-size: 1.2em; }
-  h4 { margin: 0; font-size: 1em; }
-  p { margin: 0; font-size: 0.8em; }
+  h3 { 
+    margin: 0; 
+    font-size: 1.05em; 
+    font-weight: 700; 
+  }
+  
+  h4 { 
+    margin: 0; 
+    font-size: 0.95em; 
+  }
+  
+  p { 
+    margin: 0; 
+    font-size: 0.85em; 
+    line-height: 1.35; 
+  }
 }
 
 .completed-challenges-area,
 .wasted-resources-area,
 .discarded-area {
-  border: 2px dashed rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  padding: 5px;
+  border: 2px dashed var(--border-dashed);
+  border-radius: 10px;
+  padding: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--wire-bg);
 
   .area-label {
-    color: #000000;
-    font-size: 0.6em;
-    font-weight: bold;
+    color: var(--text-primary);
+    font-size: 0.85em;
+    font-weight: 700;
   }
 }
 
 .wasted-resources-area,
 .discarded-area {
-  background: rgba(255, 0, 0, 0.247);
+  background: rgba(169, 68, 66, 0.08);
+  border-color: rgba(169, 68, 66, 0.2);
 }
 
 .completed-challenges-area {
-  background: rgba(0, 255, 0, 0.162);
+  background: rgba(79, 138, 111, 0.08);
+  border-color: rgba(79, 138, 111, 0.2);
+}
+
+
+.challenge-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 999;
+  
+  &.expanded {
+    background: linear-gradient(135deg, #D6E4F0 0%, var(--innovate) 100%);
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  .toggle-icon {
+    font-size: 1.2em;
+    font-weight: bold;
+  }
+}
+
+.card-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  
+  &.open {
+    max-height: 600px;
+  }
+}
+
+.details-inner {
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.3);
+}
+
+.card-drawer {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 200%;
+  height: auto;
+  min-height: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--innovate);
+  border-radius: 0 10px 10px 0;
+  padding: 12px;
+  box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-20px);
+  transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+  z-index: 500;
+  
+  &.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+}
+
+.drawer-content {
+  h4 {
+    margin-top: 0;
+    color: var(--innovate);
+    font-size: 1.1em;
+  }
+  
+  p {
+    margin: 8px 0;
+    line-height: 1.4;
+  }
+  
+  ul {
+    margin: 4px 0;
+    padding-left: 20px;
+    
+    li {
+      margin: 4px 0;
+    }
+  }
 }

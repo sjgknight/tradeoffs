@@ -10,10 +10,44 @@ import './style.scss';
 import { ConnectedSpaceMap } from '@boardzilla/core';
 // import '@boardzilla/core/index.css';
 
+ const multilineInfo = (text?: string) =>
+  text
+    ? text.split('\n').map((p, i) => <p key={i}>{p}</p>)
+    : null;
+    
+    
+  interface Rule {
+  id: string
+  title: string
+  content: JSX.Element | ((game: any) => JSX.Element)
+}
+
 render(setup, {
   settings: {
     //tokens: numberSetting('Number of tokens', 4, 24),
   },
+  
+  
+// info modal to show rules - this doesn't work. The infomodal can also be used to dynamically make rules available based on game state. 
+      // Add infoModals here, at the same level as settings and layout
+  infoModals: [
+    {
+      title: 'Game Rules',
+      modal: (game) => (
+        <>
+          <h1>How to Play</h1>
+          <p>Place tokens on challenge cards to complete them and earn points.</p>
+          <h2>Token Types</h2>
+          <ul>
+            <li><strong>Data:</strong> Information sources</li>
+            <li><strong>Method:</strong> Approaches and techniques</li>
+            <li><strong>User:</strong> People affected</li>
+            <li><strong>Aim:</strong> Goals and objectives</li>
+          </ul>
+        </>
+      )
+    }
+  ],
 
   layout: (game) => {
 
@@ -23,6 +57,8 @@ render(setup, {
 
     // turn off debug layout
         game.disableDefaultAppearance();
+
+
 
     // ============================================
     // MAIN BOARD GRID LAYOUT
@@ -127,30 +163,100 @@ render(setup, {
     // Pool: make tokens visually piled/haphazard on the left drawer
     game.all('pool').layout(Token, {
       // multiple small stacks with haphazard overlap for visual pile
-      rows: 6,
-      columns: 2,
+    //  rows: 6,
+    //  columns: 2,
       gap: 0,
       margin: 0,
       haphazardly: 3,
+      maxOverlap: 0, //doesn't seem to be applying properly?
       alignment: 'left'
     });
 
     // ============================================
     // Deck layout
     // ============================================
+
     // ---------------- Challenge Deck & Cards ----------------
       game.all(ChallengeCard).appearance({
           aspectRatio: 0,
-          render: (card) => (
-              <div className="challenge-card">
-                  <h4>Challenge</h4>
-                  <p>{card.problem}</p>
+  render: (card) => {
+    const [drawerOpen, setDrawerOpen] = React.useState(false);
+    
+    return (
+      <div className="challenge-card card-with-drawer">
+        <div className="card-main" onClick={() => setDrawerOpen(!drawerOpen)}>
+          <h4>Challenge</h4>
+          <p>{card.problem}</p>
+          <span className="expand-hint">{drawerOpen ? '◀' : '▶'}</span>
+        </div>
+        
+        <div className={`card-drawer ${drawerOpen ? 'open' : ''}`}>
+          <div className="drawer-content">
+            <h4>{card.problem}</h4>
+            {card.problem_detail && <p>{card.problem_detail}</p>}
+            <p><strong>Points:</strong> {card.points}</p>
+            <p><strong>Requirements:</strong> {card.requirements?.blocks} blocks</p>
+            {card.requirements?.principles && card.requirements.principles.length > 0 && (
+              <div>
+                <strong>Principles:</strong>
+                <ul>
+                  {card.requirements.principles.map((p: any, i: number) => (
+                    <li key={i}>{p.name} (value: {p.value})</li>
+                  ))}
+                </ul>
               </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  },
+          info: card => (
+            <>
+              {multilineInfo(card.problem)}
+            </>
           )
-      });
+        });
+  
+// alternative accordian option?  
+/*
+game.all(ChallengeCard).appearance({
+  aspectRatio: 0,
+  render: (card) => {
+    const [expanded, setExpanded] = React.useState(false);
+    
+    return (
+      <div className={`challenge-card ${expanded ? 'expanded' : ''}`} onClick={() => setExpanded(!expanded)}>
+        <div className="card-header">
+          <h4>Challenge</h4>
+          <span className="toggle-icon">{expanded ? '−' : '+'}</span>
+        </div>
+        <p className="card-summary">{card.problem}</p>
+        
+        <div className={`card-details ${expanded ? 'open' : ''}`}>
+          <div className="details-inner">
+            {card.problem_detail && <p>{card.problem_detail}</p>}
+            <p><strong>Points:</strong> {card.points}</p>
+            <p><strong>Requirements:</strong> {card.requirements?.blocks} blocks</p>
+            {card.requirements?.principles && card.requirements.principles.length > 0 && (
+              <div>
+                <strong>Principles:</strong>
+                <ul>
+                  {card.requirements.principles.map((p: any, i: number) => (
+                    <li key={i}>{p.name} (value: {p.value})</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  },
+*/
 
       game.all('challengeDeck').appearance({
-          aspectRatio: 0,
+          aspectRatio: .7,
           render: () => (
               <div className="challenge-deck-container">
                   <span className="area-label">Challenges</span>
@@ -438,7 +544,7 @@ game.layout('challengeSpace', {
       aspectRatio: 0,
       render: () => (
         <div className="wasted-resources-area">
-          <span className="area-label"> Spent Resources </span>
+          <span className="area-label">Wasted Resources</span>
         </div>
       )
     });
@@ -448,7 +554,7 @@ game.layout('challengeSpace', {
       aspectRatio: 0,
       render: () => (
         <div className="discarded-area">
-          <span className="area-label"> Discarded Challenges</span>
+          <span className="area-label">Discarded cards</span>
         </div>
       )
     });

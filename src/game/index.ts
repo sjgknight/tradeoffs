@@ -1,22 +1,28 @@
 /**
- * TO DO
+ TO DO
  * 0. There's something wrong with the playInnovation action such that the tile doesnt move or show (although the resources are reduced, and they do seem to move into the wastedResources)
- *
+ 
  * 1. <s>fix the subflow followup </s>and check other code for stupidity https://docs.boardzilla.io/api/classes/Game#flowcommands
- * 2. Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies
- * 3. visual design https://docs.boardzilla.io/category/customizing-the-ui
+ * 2. <s>Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies</s>
+ * 3. <s>visual design https://docs.boardzilla.io/category/customizing-the-ui </s>
  * 4. Deal with wildcard strategies (999 value) (see how the example using () => for trump cards)
- * 5. Consider 1 player, cooperative, and competitive modes. In cooperative challenges and strategies could be shared. In competitive, only strategies.
+ * 5. Consider 1 player, cooperative, and competitive modes. Consider what would be (1) shared (same pieces), (2) duplicated (same pieces, each player receiving a copy), (3) distinct, for different gameplay. E.g., in cooperative challenges and strategies could be shared by all, or they'd have distinct challenges but shared strategies. In competitive, they might start with different strategies in play (mirroring e.g., different regulatory environment), and draw their own challenges.
  * 6. Consider a 'versioning' with different game modes (possibly even allowing users to add cards)
- * 7. Ideally i'd work out how to ensure tokens can only be placed on matching type spaces as a function or class method
+ * 7. <s>Ideally i'd work out how to ensure tokens can only be placed on matching type spaces as a function or class method </s>
  * 8. Consider if there's a way to automate balance testing, can I record outputs with random hands and choices using https://docs.boardzilla.io/cookbook/testing ?
  * can I run different tests with e.g., a 'probably bad' and 'probably good' strategy to compare likelihood of winning
  * 9. Consider publish https://docs.boardzilla.io/publishing/publish or elsewhere
- *
+ 
+New todo
+
+1. There's some subflow issue with resolving events, if you select 'accept the impact of the event, you potentially get stuck. 
+ 
+ Notes:
+ 
  * With 3 resource and win at score 10, a minimum of 3 challenges need completing and one stashing, requiring spend of 14 absolute minimum, or 5 turns.
  * I've changed the resource setting to 5 to allow for more flexibility in the game, further testing needed.
- *
- */
+ 
+ **/
 
 import {
     createGame,
@@ -308,6 +314,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             });
 
             // Aggregate values from the active strategies
+            // This may be where wildcards are useful
             if (activestrategies.length > 0) {
                 activestrategies.forEach(strategy => {
                     strategy.contribution?.principles.forEach(principle => {
@@ -319,7 +326,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 });
             }
 
-            // Then I want to check each challenge card to:
+            // We need to complete challenges by building innovations. The events may impact our innovations. Cheaper innovations are faster to build, but more susceptible to events. Strategies/regulation can help by providing baseline protection. So...
+            // Check each challenge card to:
             // 1. See whether the card requirements relate to the -impact of the event
             // 2. For TRUE, check whether the current strategy cards exceed the impact of the event
             // 3. For FALSE, check whether the card has any resource tokens placed on it
@@ -362,7 +370,6 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     if (failTest.length > 0) {
 
                         // Get the token values for each challenge
-
                         const allSlots = player.allMy(Slot, { group: 'challengeslot' });
                         const riskedSlots = allSlots.filter(slot => slot.has(challenge));
                         const riskedTokens = riskedSlots.all(Token);
@@ -407,18 +414,29 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     });
                 });
 
-                const usefulTokens = player.my('pool')!.all(Token).filter(tok => tok.quality >= Math.abs(worstImpact));
+                // get the tokens in the pool that can mitigate this event
+                const potentialTokens = player.my('pool')!.all(Token).filter(tok => tok.quality >= Math.abs(worstImpact));
 
-                // Check that the token slots on the failing challenge cards match the usefulTokens.type
-                // how to get which slots. ARGH.  Others? Or parent of them?
+                // Check token slots that (1) are on the failing challenge cards; (2) are empty; and (3) match the usefulTokens.types
                 // Iterate over usefulSlots to access their tokenSpace children
                 const usefulSlots = [...new Set(activechallenges
                     .map(challenge => challenge.container(Slot)).flatMap(slot => {
                         // Access the tokenSpace children of each slot
                         const tokenSpaces = slot!.all(Space).filter(space => space.name === 'tokenSpace');
+                        // filter out slots that are already filled
                         // Filter the tokenSpace slots based on the Token type (space names now include slot index)
-                        return tokenSpaces.flatMap(tokenSpace => tokenSpace.all(Space).filter(space => usefulTokens.some(token => space.name.startsWith(token.type))));
+                return tokenSpaces.all(Space).filter(space => {
+                    // Check if this space matches any useful token type AND is empty
+                    const matchesTokenType = potentialTokens.some(token => space.name.startsWith(token.type));
+                    const isEmpty = space.isEmpty();
+                    return matchesTokenType && isEmpty;
+                });
                     }))];
+
+                // Then get the final useful tokens, based on potential tokens with matching useful slots
+                const usefulTokens = potentialTokens.filter(token => {
+                    return usefulSlots.some(slot => slot.name.startsWith(token.type));
+                });
 
                 // Create a flat map of result.riskedTokens and result.challenge.name
                 const riskedTokensMap = results.flatMap(result =>
@@ -507,20 +525,22 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             } // END OF THE ELSE IF
         }), // end othe action
 
+
+    
+
+
         mitigateToken: player => action<{
             usefulTokens: Token[],
             usefulSlots: Slot[]
         } > ({
             // Prompt the user to choose a token and corresponding slot (or automatically allocate it)
             prompt: 'Choose a Token and Slot to play',
-        }).chooseOnBoard('chosenToken', ({ usefulTokens }) => usefulTokens).chooseOnBoard('chosenSlot', ({ usefulSlots }) => usefulSlots).do(({ chosenToken, chosenSlot, usefulSlots, usefulTokens }) => {
-            // Ideally have validation here to check the slot type and token type match
-
-            if (usefulSlots.length === 1) {
-                chosenSlot = usefulSlots[0];
-            }
-
-            chosenToken.putInto(chosenSlot);
+        }).chooseOnBoard('chosenToken', ({ usefulTokens }) => usefulTokens)
+            .chooseOnBoard('chosenSlot', ({ chosenToken, usefulSlots }) => {
+                // Further filter usefulSlots to only those matching the chosen token type
+                return usefulSlots.filter(slot => slot.name.startsWith(chosenToken.type));
+            }).do(({ chosenToken, chosenSlot }) => {
+                chosenToken.putInto(chosenSlot);
 
             player.my('pool')!.first(Token)?.putInto($.wastedResource);
 
