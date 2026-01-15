@@ -27,7 +27,8 @@ import {
     Stack,
     Do,
     union,
-    PieceGrid
+    PieceGrid,
+    ConnectedSpaceMap
 } from '@boardzilla/core';
 
 export class TradeoffsPlayer extends Player<Tradeoffs, TradeoffsPlayer> {

@@ -3,12 +3,13 @@
 // =======================
 #background {
   // background: #020024;
-  background: linear-gradient(331deg,rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(81, 110, 143, 1) 71%, rgba(116, 179, 242, 1) 100%, rgba(0, 212, 255, 1) 98%);
+  background: #f2f6f9; 
+  // background: linear-gradient(331deg,rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(81, 110, 143, 1) 71%, rgba(116, 179, 242, 1) 100%, rgba(0, 212, 255, 1) 98%);
   // background-image: url("./background/1.jpg");
 }
 
 // =======================
-// Modals
+// Modals (which game elements does this apply to?)
 // =======================
 .modal-popup {
   position: fixed !important;
@@ -306,6 +307,10 @@
     border-radius: 4px;
     z-index: 10;
   }
+}
+
+.drawer-tab {
+  z-index: 999;
 }
 
 .challenge-card {

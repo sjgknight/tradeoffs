@@ -7,17 +7,88 @@ import { ChallengeCard } from '../game/pieces/challenges.ts';
 import { StrategyCard } from '../game/pieces/strategies.ts';
 import { EventCard } from '../game/pieces/events.ts';
 import './style.scss';
+import { ConnectedSpaceMap } from '@boardzilla/core';
 // import '@boardzilla/core/index.css';
 
 render(setup, {
   settings: {
     //tokens: numberSetting('Number of tokens', 4, 24),
   },
-    layout: game => {
+
+  layout: (game) => {
+
+//to remove after development
+    game.showLayoutBoundingBoxes()
+
 
     // turn off debug layout
         game.disableDefaultAppearance();
 
+    // ============================================
+    // MAIN BOARD GRID LAYOUT
+    // ============================================
+    // Create a master grid that divides the screen into regions
+    
+    // Regions are:
+    // challengeSpace, activeStrategies, hand, challengeCompleted, pool, eventDeck, discarded, strategyDeck, wastedResource
+       
+     // Top row: Challenge area (full width, 20% height)
+    game.layout('challengeSpace', {
+      area: { left: 0, top: 0, width: 90, height: 20 },
+      scaling: 'fit' // Shrink cards to fit space
+    });
+
+    // Center: Active play area
+    game.layout('activeStrategies', {
+      area: { left: 0, top: 25, width: 90, height: 20 },
+      scaling: 'fit' // Shrink cards to fit space
+    });
+    
+     // Mid-left: Token pool
+    game.layout('pool', {
+      area: { left: 0, top: 50, width: 15, height: 20 },
+      scaling: 'fit' // Shrink cards to fit space
+    });
+    
+    // mid-Right column: Challenge and strategy deck
+    game.layout('hand', {
+      area: { left: 60, top: 50, width: 28, height: 20 },
+      scaling: 'fit' // Shrink cards to fit space
+    });
+
+    // mid-center: Player hand
+    game.layout('strategyDeck', {
+      area: { left: 18, top: 50, width: 40, height: 38 },
+      scaling: 'fit' // Shrink cards to fit space
+    });
+
+    // Bottom left: Discard/Wasted resources
+    game.layout('wastedResource', {
+      area: { left: 15, top: 90, width: 13, height: 10 },
+      scaling: 'fit' // Shrink cards to fit space
+    });
+
+    game.layout('discarded', {
+      area: { left: 30, top: 90, width: 13, height: 10 },
+    });
+
+    game.layout('challengeCompleted', {
+      area: { left: 50, top: 90, width: 13, height: 10 },
+    });
+    
+     game.layout('eventDeck', {
+      area: { left: 60, top: 90, width: 15, height: 10 },
+      scaling: 'fit' // Shrink cards to fit space
+    });
+    
+
+ /*
+ hello world
+ */
+
+    // ============================================
+    // Token layout
+    // ============================================
     // ---------------- Tokens ----------------
     game.all(Token).appearance({
       aspectRatio: 0.8,
@@ -53,12 +124,20 @@ render(setup, {
       )
     });
 
+    // Pool: make tokens visually piled/haphazard on the left drawer
     game.all('pool').layout(Token, {
-      rows: 3,
+      // multiple small stacks with haphazard overlap for visual pile
+      rows: 6,
+      columns: 2,
       gap: 0,
       margin: 0,
+      haphazardly: 3,
+      alignment: 'left'
     });
 
+    // ============================================
+    // Deck layout
+    // ============================================
     // ---------------- Challenge Deck & Cards ----------------
       game.all(ChallengeCard).appearance({
           aspectRatio: 0,
@@ -79,8 +158,6 @@ render(setup, {
           )
       });
 
-
-      
       // Layout cards inside the drawer
       game.all('challengeDeck')!.layout(ChallengeCard, {
           rows: 3,
@@ -89,6 +166,40 @@ render(setup, {
           margin: 0.5
       });
 
+
+    // challenge drawer: moved to right side and opens left
+    game.layoutAsDrawer('challengeDeck', {
+      area: {
+        top: 67,
+        left: 82,
+        width: 16,
+        height: 28,
+      },
+      openDirection: 'left',
+    tab: (
+      <div className="drawer-tab">
+        Challenge Deck ({game.all('challengeDeck')!.all(ChallengeCard).length})
+      </div>
+    ),
+
+    closedTab: (
+      <div className="drawer-tab">
+        Challenges
+      </div>
+    ),
+
+    openIf: actions =>
+      actions.some(a =>
+        a.name === 'addChallenge' ||
+        a.name === 'stashChallenge'
+      ),
+
+    closeIf: actions =>
+      actions.every(a =>
+        a.name !== 'addChallenge' &&
+        a.name !== 'stashChallenge'
+      ),
+  });	
 
         // Create the drawer
         //This doesn't work. And it would need an OR in the openIf/closeIf for stashing a challenge.
@@ -105,6 +216,47 @@ render(setup, {
     //      closeIf: actions => actions.every(a => a.name !== 'addChallenge'),
     //  });
      
+     
+    // ============================================
+    // More deck layout
+    // ============================================
+    // Layout challenge slots so active challenges are a single row at the top
+    // This positions the container across the top of the board and lays out slots in one row.
+    
+// Only appropriate if 'challengeSpace' is a grid/AdjacencySpace (e.g. SquareGrid)
+// and you want to configure the underlying grid cells (not flexible child layouts).
+game.all('challengeSpace')!.configureLayout({
+  // The visual band on the board where the grid is rendered
+  area: { left: 10, width: 80, top: 24, height: 70 },
+
+  // Dimensions of the grid (controls how many fixed cells exist)
+  rows: 1,
+  columns: 3,
+    direction: 'ltr',
+  maxOverlap: 0,
+  gap: {x: 10, y: 0}
+});
+      
+    
+// Position challengeSpace on screen (top 20%)
+game.layout('challengeSpace', {
+  area: { left: 0, top: 0, width: 100, height: 20 },
+  rows: { max: 1 }
+});
+
+    
+     // ============================================
+    // CHALLENGE SPACE INTERNAL LAYOUT
+    // ============================================  
+    // Arrange the 3 slots in a row within challengeSpace
+    game.all('challengeSlots').layout(Slot, {
+      rows: 1,
+      columns: 3,
+      gap: 2,
+    });
+    
+
+    
     game.all('challengeSpace').appearance({
       aspectRatio: 0,
       render: () => (
@@ -113,7 +265,8 @@ render(setup, {
         </div>
       )
     });
-
+    
+    // ---------------- Strategy Cards ----------------
     game.all('challengeSlots').appearance({
       aspectRatio: 0,
       render: () => (
@@ -159,7 +312,6 @@ render(setup, {
       rows: 2,
       columns: 2,
       gap: 0.2,
-      margin: 0.5
     });
 
 
@@ -192,7 +344,6 @@ render(setup, {
     });
 
     game.all('activeStrategies').layout(StrategyCard, {
-      rows: 3,
       columns: 3,
       gap: 0.5,
     });
@@ -209,7 +360,7 @@ render(setup, {
 
     // ---------------- Event Deck & Cards ----------------
     game.all(EventCard).appearance({
-      aspectRatio: 0,
+      aspectRatio: .66,
       render: (card) => (
         <div className="event-card">
           <h3>{card.type}</h3>
@@ -219,7 +370,7 @@ render(setup, {
 
     // Add this after the EventCard appearance definition
     game.all('eventDeck').appearance({
-      aspectRatio: 0.75,
+      aspectRatio: .66,
       render: () => (
           <div className="event-deck-container">
             <span className="area-label"> Event Deck </span>
@@ -228,9 +379,13 @@ render(setup, {
     });
 
     game.all('eventDeck').layout(EventCard, {
-      rows: 4,
-      columns: 4,
-      gap: 0.5,
+      rows: {max: 1},
+            scaling: 'fit', // Shrink cards to fit space
+
+      // columns: 1,
+      gap: 0.2,
+      offsetColumn: {x: 1, y: 1}, // Stack effect
+      direction: 'rtl'
     });
 
     // ---------------- Score ----------------
@@ -317,5 +472,8 @@ render(setup, {
         direction: 'ltr',
         haphazardly: 3,
     });
+	
+	
+	
   }
 });
