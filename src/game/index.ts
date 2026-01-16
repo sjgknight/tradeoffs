@@ -726,6 +726,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             } else if (game.round <= game.maxRounds) {
                 game.message(`{{player}} proceeds to the next round with {{ score }} and resource {{ resource }}, but wasted resource of {{ damage }}.`, { player: player, score: player.score, resource: player.resources, damage: player.damage });
                 game.round += 1;
+                game.announce('newRound');
                 //return game.x(); // here I thought I could refer people back to my flow phase, but perhaps I need to have a separate choices action to refer people to...this seems overkill?
 
 
@@ -772,7 +773,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     // all the other challenge cards are in the deck  //challengeSpace.challengeSlots.slot0
                     // Set the round marker to an initial state of 1
                     () => {
-                        game.round = 1;
+                        game.round = 1
                     }
                 ]
             }),

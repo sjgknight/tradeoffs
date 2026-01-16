@@ -49,6 +49,18 @@ render(setup, {
     }
   ],
 
+
+    announcements: {
+        newRound: game => (
+            <div>
+                <h1>New Round</h1>
+                The game has entered round: {game.round}!
+            </div>
+        )
+    },
+
+
+
   layout: (game) => {
 
 // to remove after development
