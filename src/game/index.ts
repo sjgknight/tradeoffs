@@ -1,23 +1,5 @@
 /**
- TO DO
- * 0. There's something wrong with the playInnovation action such that the tile doesnt move or show (although the resources are reduced, and they do seem to move into the wastedResources)
- 
- * 1. <s>fix the subflow followup </s>and check other code for stupidity https://docs.boardzilla.io/api/classes/Game#flowcommands
- * 2. <s>Create a mapping of principle expressions to numbers so I just update the principles once and it flows across event/challenge/stratgies</s>
- * 3. <s>visual design https://docs.boardzilla.io/category/customizing-the-ui </s>
- * 4. Deal with wildcard strategies (999 value) (see how the example using () => for trump cards)
- * 5. Consider 1 player, cooperative, and competitive modes. Consider what would be (1) shared (same pieces), (2) duplicated (same pieces, each player receiving a copy), (3) distinct, for different gameplay. E.g., in cooperative challenges and strategies could be shared by all, or they'd have distinct challenges but shared strategies. In competitive, they might start with different strategies in play (mirroring e.g., different regulatory environment), and draw their own challenges.
- * 6. Consider a 'versioning' with different game modes (possibly even allowing users to add cards)
- * 7. <s>Ideally i'd work out how to ensure tokens can only be placed on matching type spaces as a function or class method </s>
- * 8. Consider if there's a way to automate balance testing, can I record outputs with random hands and choices using https://docs.boardzilla.io/cookbook/testing ?
- * can I run different tests with e.g., a 'probably bad' and 'probably good' strategy to compare likelihood of winning
- * 9. Consider publish https://docs.boardzilla.io/publishing/publish or elsewhere
- 
-New todo
-
-1. There's some subflow issue with resolving events, if you select 'accept the impact of the event, you potentially get stuck. 
- 
- Notes:
+Notes:
  
  * With 3 resource and win at score 10, a minimum of 3 challenges need completing and one stashing, requiring spend of 14 absolute minimum, or 5 turns.
  * I've changed the resource setting to 5 to allow for more flexibility in the game, further testing needed.

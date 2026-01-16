@@ -26,13 +26,6 @@ If needed, check:
 npm install
 ```
 
-## To do
-
-- [ ] Balance testing needed
-- [ ] Consider cooperative/competitive modes
-- [ ] Update title and icon when publishing on the Broadzilla portal
-- [ ] Hide slot names until a card is selected
-
 
 ## Background to repo
 

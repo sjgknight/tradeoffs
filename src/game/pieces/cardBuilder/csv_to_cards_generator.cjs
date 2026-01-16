@@ -1,3 +1,4 @@
+// run by 'node file.js'
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parse/sync');
@@ -21,6 +22,27 @@ function readPrinciples(principlesPath) {
     });
     return principles;
 }
+
+// Write principles.json
+function writePrinciplesJson(principles, outputDir) {
+    const obj = Object.fromEntries(
+        Array.from(principles.entries()).map(([id, p]) => [
+            id,
+            {
+                id: p.id,
+                name: p.name,
+                description: p.description
+            }
+        ])
+    );
+
+    const outPath = path.join(outputDir, 'principles.json');
+    fs.writeFileSync(outPath, JSON.stringify(obj, null, 2), 'utf-8');
+    console.log('✓ principles.json');
+
+    return obj;
+}
+
 
 // Read cards CSV
 function readCards(cardsPath) {
@@ -238,6 +260,8 @@ function main() {
     console.log('Reading principles...');
     const principles = readPrinciples(principlesPath);
     console.log(`Found ${principles.size} principles`);
+
+    writePrinciplesJson(principles, outputDir);
 
     console.log('Reading cards...');
     const cards = readCards(cardsPath);
