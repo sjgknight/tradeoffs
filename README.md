@@ -1,7 +1,14 @@
 # Tradeoffs
 
-A board game exploring ethical AI decision-making in education,
-built with [Boardzilla](https://docs.boardzilla.io).
+A board game exploring tradeoffs in decision making contexts. 
+
+This version is setup around AI in education and AI ethics. 
+
+The boardgame setup involves rounds in which resources must be spent on either innovating to address challenges, or building strategies (/regulation).
+Innovations have varied costs, and are needed to address challenges. However, events can impact innovations, especially in an uncertain regulatory context or one with poor systems to protect users and ensure quality innovation. 
+So players face tradeoffs in deciding how to innovate, and investment in regulation 
+
+Built with [Boardzilla](https://docs.boardzilla.io).
 
 
 ## To run
