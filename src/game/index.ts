@@ -283,9 +283,19 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         }).chooseOnBoard(
             'card', $.eventDeck.all(EventCard),
         ).message(
-            `An event occurred....`
+            `{{player}} triggered an event`
+            //`An event occurred....`
         ).do(({ card }) => {
 
+            game.message(`You have drawn: {{name}}. {{description}}. This event impacts: {{impact}}.`,
+                {
+                    name: card.name,
+                    description: card.description,
+                    impact: card.impact
+                        .flat()
+                        .map(i => `${i.principle}: ${i.value}`)
+                        .join(', ')
+                });
             interface PrincipleData {
                 principle: string | number | undefined;
                 eventValue: number;
