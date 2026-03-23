@@ -76,20 +76,27 @@ render(setup, {
     // MAIN BOARD GRID LAYOUT
     // ============================================
     // Create a master grid that divides the screen into regions
-    
+
     // Regions are:
     // challengeSpace, activeStrategies, hand, challengeCompleted, pool, eventDeck, discarded, strategyDeck, wastedResource
-       
-     // Top row: Challenge area (full width, 20% height)
-    game.layout('challengeSpace', {
-      area: { left: 0, top: 0, width: 90, height: 30 },
-      scaling: 'fit' // Shrink cards to fit space
-    });
+
+      // Position challengeSpace on screen (top 20%)
+      game.layout('challengeSpace', {
+          area: { left: 0, top: 0, width: 100, height: 30 },
+          rows: { max: 1 },
+          scaling: 'fill'
+      });
+
+      // Current event card display (prominent position)
+      game.layout('currentEvent', {
+          area: { left: 35, top: 32, width: 30, height: 15 },
+          scaling: 'fit'
+      });
 
     // Center: Active play area
     game.layout('activeStrategies', {
       area: { left: 0, top: 35, width: 90, height: 20 },
-      scaling: 'fit' // Shrink cards to fit space
+      scaling: 'fill' // cards to fit space
     });
     
      // Mid-left: Token pool
@@ -101,13 +108,13 @@ render(setup, {
     // mid-Right column: Challenge and strategy deck
     game.layout('hand', {
       area: { left: 72, top: 60, width: 28, height: 20 },
-      scaling: 'fit' // Shrink cards to fit space
+      scaling: 'fill' // Shrink cards to fit space
     });
 
     // mid-center: Player hand
     game.layout('strategyDeck', {
       area: { left: 18, top: 60, width: 40, height: 30 },
-      scaling: 'fit' // Shrink cards to fit space
+      scaling: 'fill' // Shrink cards to fit space
     });
 
     // Bottom left: Discard/Wasted resources
@@ -148,7 +155,7 @@ render(setup, {
           };
           return icons[type] || '●';
       }
-
+      //       {times(token.quality, n => <span key={n} className="quality-pip">●</span>)}
       game.all(Token).appearance({
           aspectRatio: 1,
           render: (token) => (
@@ -226,7 +233,7 @@ render(setup, {
           <div className="drawer-content">
             <h4>{card.problem}</h4>
             {card.problem_detail && <p>{card.problem_detail}</p>}
-            <p><strong>Points:</strong> {card.points}</p>
+            <p><strong>Points:</strong> {card.points}⭐</p>
             <p><strong>Requirements:</strong> {card.requirements?.blocks} blocks</p>
             {card.requirements?.principles && card.requirements.principles.length > 0 && (
               <div>
@@ -304,7 +311,8 @@ game.all(ChallengeCard).appearance({
           rows: 3,
           columns: 2,
           gap: 0.5,
-          margin: 0.5
+          margin: 0.5,
+          scaling: 'fit' // Shrink cards to fit space
       });
 
 
@@ -432,32 +440,27 @@ game.all(ChallengeCard).appearance({
 // and you want to configure the underlying grid cells (not flexible child layouts).
 game.all('challengeSpace')!.configureLayout({
   // The visual band on the board where the grid is rendered
-  area: { left: 10, width: 80, top: 24, height: 70 },
+  area: { left: 10, width: 80, top: 24, height: 30 },
 
   // Dimensions of the grid (controls how many fixed cells exist)
   rows: 1,
-  columns: 3,
+    columns: 3,
+    scaling: 'fill',
     direction: 'ltr',
   maxOverlap: 0,
   gap: {x: 10, y: 0}
 });
       
-    
-// Position challengeSpace on screen (top 20%)
-game.layout('challengeSpace', {
-  area: { left: 0, top: 0, width: 100, height: 30 },
-  rows: { max: 1 }
-});
-
-    
      // ============================================
     // CHALLENGE SPACE INTERNAL LAYOUT
     // ============================================  
     // Arrange the 3 slots in a row within challengeSpace
-    game.all('challengeSlots').layout(Slot, {
+      game.all('challengeSlots').layout(Slot, {
+     //     area: { left: 0, top: 0, width: 100, height: 100 },
       rows: 1,
       columns: 3,
-      gap: 2,
+        gap: 2,
+   //   scaling: 'fit'
     });
     
 

@@ -75,8 +75,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
     // For each player, setup their space (this is probably a 1 player game, but this provides extensibility)
     for (const player of game.players) {
 
-    // setup space to hold challenge cards
-    // contains three slots slot0, slot1, slot2
+    // challengeSpace holds challenge cards
+    // contains three slots challengeSlots slot0, slot1, slot2
     // each slot contains a tokenSpace for each token type
     // this allows us to check if the tokens are in place for a challenge
     // by checking the space, rather than the card
@@ -131,6 +131,9 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         eventCards.forEach(card => {
             eventDeck.create(EventCard, card.name!, card);
         });
+
+        // Setup space for displaying the current drawn event card
+        const currentEvent = game.create(Space, 'currentEvent', { player });
 
         // Setup challenge deck
         const challengeDeck = game.create(Space, 'challengeDeck');
@@ -310,12 +313,22 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             prompt: 'Draw an event card',
         }).chooseOnBoard(
             'card', $.eventDeck.all(EventCard),
+        ).move(
+            'card', player.my('currentEvent')!
         ).message(
-            `{{player}} triggered an event`
-            //`An event occurred....`
-        ).do(({ card }) => {
+            `{{player}} drew an event card. Click "Process Event" to resolve it.`
+        ),
 
-            game.message(`You have drawn: {{name}}. {{description}}. This event impacts: {{impact}}.`,
+        processEvent: player => action({
+            prompt: 'Process the drawn event card',
+        }).do(() => {
+            const card = player.my('currentEvent')!.first(EventCard);
+            if (!card) {
+                game.message('No event card to process.');
+                return;
+            }
+
+            game.message(`Processing event: {{name}}. {{description}}. This event impacts: {{impact}}.`,
                 {
                     name: card.name,
                     description: card.description,
@@ -463,12 +476,12 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                         const tokenSpaces = slot!.all(Space).filter(space => space.name === 'tokenSpace');
                         // filter out slots that are already filled
                         // Filter the tokenSpace slots based on the Token type (space names now include slot index)
-                return tokenSpaces.all(Space).filter(space => {
-                    // Check if this space matches any useful token type AND is empty
-                    const matchesTokenType = potentialTokens.some(token => space.name.startsWith(token.type));
-                    const isEmpty = space.isEmpty();
-                    return matchesTokenType && isEmpty;
-                });
+                        return tokenSpaces.all(Space).filter(space => {
+                            // Check if this space matches any useful token type AND is empty
+                            const matchesTokenType = potentialTokens.some(token => space.name.startsWith(token.type));
+                            const isEmpty = space.isEmpty();
+                            return matchesTokenType && isEmpty;
+                        });
                     }))];
 
                 // Then get the final useful tokens, based on potential tokens with matching useful slots
@@ -500,11 +513,16 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                         impactedChallenges: impactedChallenges
                     },
                 });
+                // THIS IS THE END OF THE 'check fails' CONDITIONAL; 
+            } else {
+                // No impacts - just close the event
+                game.message(`Event {{name}} had no impact on your current challenges.`,
+                    { name: card.name });
 
-
-
-            } // THIS IS THE END OF THE 'check fails' CONDITIONAL;  // DO I NEED AN ELSE HERE TO LOOP THROUGH GAMEPLAY ROUNDS?
-        }), // THIS IS THE END OF THE DRAW EVENT ACTION
+                // Move the processed event card to discarded
+                card.putInto($.discarded);
+            }
+        }), // THIS IS THE END OF THE PROCESS EVENT ACTION
 
         // Then action to check with the user what they want to do, mitigate or accept and enact
         // with followup to different actions depending on decision
@@ -559,6 +577,11 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     { impactedChallenges: impactedChallenges });
                 //game.followUp({ name: 'playerinturnphase' });
 
+                // Discard the event card
+                const eventCard = player.my('currentEvent')!.first(EventCard);
+                if (eventCard) {
+                    eventCard.putInto($.discarded);
+                }
 
             } // END OF THE ELSE IF
         }), // end othe action
@@ -585,6 +608,12 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             game.message(`{{player}} one token discarded, and token placed. Draw another event to proceed...`,
                 { player: player });
 
+                // Discard the event card
+                const eventCard = player.my('currentEvent')!.first(EventCard);
+                if (eventCard) {
+                    eventCard.putInto($.discarded);
+                }
+
             // Player mitigated so must pass through an event to proceed
             game.followUp({ name: 'drawEvent' });
 
@@ -610,7 +639,11 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
 
             game.message(`{{player}} played and discarded strategy card {{chosenCard}} to mitigate the impact.`,
                 { chosenCard: chosenCard, player: player });
-
+            // Discard the event card
+            const eventCard = player.my('currentEvent')!.first(EventCard);
+            if (eventCard) {
+                eventCard.putInto($.discarded);
+            }
             // Player mitigated so must pass through an event to proceed
             game.followUp({ name: 'drawEvent' });
 
@@ -841,6 +874,11 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                             // Draw an event card and resolve it
                             playerActions({
                                 actions: ['drawEvent'],
+                            }),
+
+                            // Process the drawn event card
+                            playerActions({
+                                actions: ['processEvent'],
                             }),
 
                             // Check the player's status after the event
