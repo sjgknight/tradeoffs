@@ -82,31 +82,31 @@ render(setup, {
        
      // Top row: Challenge area (full width, 20% height)
     game.layout('challengeSpace', {
-      area: { left: 0, top: 0, width: 90, height: 20 },
+      area: { left: 0, top: 0, width: 90, height: 30 },
       scaling: 'fit' // Shrink cards to fit space
     });
 
     // Center: Active play area
     game.layout('activeStrategies', {
-      area: { left: 0, top: 25, width: 90, height: 20 },
+      area: { left: 0, top: 35, width: 90, height: 20 },
       scaling: 'fit' // Shrink cards to fit space
     });
     
      // Mid-left: Token pool
     game.layout('pool', {
-      area: { left: 0, top: 50, width: 15, height: 20 },
+      area: { left: 0, top: 60, width: 15, height: 20 },
       scaling: 'fit' // Shrink cards to fit space
     });
     
     // mid-Right column: Challenge and strategy deck
     game.layout('hand', {
-      area: { left: 60, top: 50, width: 28, height: 20 },
+      area: { left: 72, top: 60, width: 28, height: 20 },
       scaling: 'fit' // Shrink cards to fit space
     });
 
     // mid-center: Player hand
     game.layout('strategyDeck', {
-      area: { left: 18, top: 50, width: 40, height: 38 },
+      area: { left: 18, top: 60, width: 40, height: 30 },
       scaling: 'fit' // Shrink cards to fit space
     });
 
@@ -342,7 +342,71 @@ game.all(ChallengeCard).appearance({
       ),
   });	
 
-        // Create the drawer
+      // Create the drawer
+      // needs an OR in the openIf/closeIf for stashing a challenge.
+      // Hand drawer for strategy cards
+      game.layoutAsDrawer('hand', {
+          area: {
+              top: 60,
+              left: 60,
+              width: 28,
+              height: 20,
+          },
+          openDirection: 'right',
+          tab: (
+              <div className="drawer-tab">
+                  Hand ({game.all('hand')!.all(StrategyCard).length})
+              </div>
+          ),
+          closedTab: (
+              <div className="drawer-tab">
+                  Hand
+              </div>
+          ),
+          openIf: actions =>
+              actions.some(a =>
+                  a.name === 'drawStrategy' ||
+                  a.name === 'playStrategy'
+              ),
+          closeIf: actions =>
+              actions.every(a =>
+                  a.name !== 'drawStrategy' &&
+                  a.name !== 'playStrategy'
+              ),
+      });
+
+      // Strategy deck drawer
+      game.layoutAsDrawer('strategyDeck', {
+          area: {
+              top: 60,
+              left: 18,
+              width: 40,
+              height: 30,
+          },
+          openDirection: 'up',
+          tab: (
+              <div className="drawer-tab">
+                  Strategy Deck ({game.all('strategyDeck')!.all(StrategyCard).length})
+              </div>
+          ),
+          closedTab: (
+              <div className="drawer-tab">
+                  Strategies
+              </div>
+          ),
+          openIf: actions =>
+              actions.some(a =>
+                  a.name === 'drawStrategyCard' ||
+                  a.name === 'playStrategyCard'
+              ),
+          closeIf: actions =>
+              actions.every(a =>
+                  a.name !== 'drawStrategyCard' &&
+                  a.name !== 'playStrategyCard'
+              ),
+      });
+
+
         //This doesn't work. And it would need an OR in the openIf/closeIf for stashing a challenge.
     //  game.layoutAsDrawer('challengeDeck', {
     //     area: {
@@ -381,7 +445,7 @@ game.all('challengeSpace')!.configureLayout({
     
 // Position challengeSpace on screen (top 20%)
 game.layout('challengeSpace', {
-  area: { left: 0, top: 0, width: 100, height: 20 },
+  area: { left: 0, top: 0, width: 100, height: 30 },
   rows: { max: 1 }
 });
 
@@ -522,9 +586,21 @@ game.layout('challengeSpace', {
       aspectRatio: 0,
       render: (card) => (
         <div className="strategy-card">
-          <p>Strategy:</p>
-          <p>{card.name}</p>
-        </div>
+              <h4>{card.name}</h4>
+              <p><strong>Type:</strong> {card.type}</p>
+              <p><strong>Cost:</strong> {card.cost}</p>
+              {card.description && <p>{card.description}</p>}
+              {card.contribution?.principles && (
+                  <div>
+                      <strong>Principles:</strong>
+                      <ul>
+                          {card.contribution.principles.map((p: any, i: number) => (
+                              <li key={i}>Principle {p.principle}: {p.value}</li>
+                          ))}
+                      </ul>
+                  </div>
+              )}
+          </div>
       )
     });
 

@@ -204,7 +204,52 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     { player: player, myresource: player.resources });
             }
         }),
+        // New action to play a challenge card from hand, choosing to stash or add to slot
+        playChallenge: player => action({
+            prompt: 'Play a challenge card from your hand',
+        }).chooseOnBoard(
+            'challengeCard', player.my('hand')!.all(ChallengeCard),
+        ).chooseFrom(
+            'action', [
+            'Stash card (gain 1 point, lose 1 resource)',
+            'Add to challenge slot'
+        ]
+        ).do(({ challengeCard, action }) => {
+            if (action.includes('Stash')) {
+                // Stash logic
+                if (player.resources >= 1 && !player.stashedThisTurn) {
+                    player.resources -= 1;
+                    player.score += 1;
+                    player.stashedThisTurn = true;
+                    challengeCard.putInto($.discarded);
 
+                    // Update the ScoreCounter piece
+                    const scoreCounter = game.first(ScoreCounter);
+                    if (scoreCounter) {
+                        scoreCounter.value = player.score;
+                    }
+
+                    game.message(`{{player}} stashed a challenge card and increased their score by 1.`, { player: player });
+                } else {
+                    game.message(`{{player}} cannot stash this card (not enough resources or already stashed this turn).`, { player: player });
+                }
+            } else if (action.includes('Add')) {
+                // Add to slot logic
+                const allSlots = player.allMy(Slot, { group: 'challengeslot' });
+                const emptySlots = allSlots.filter(slot => !slot.has(ChallengeCard));
+
+                if (emptySlots.length > 0) {
+                    const freeSlot = emptySlots.first()!;
+                    challengeCard.putInto(freeSlot);
+                    game.message(`{{player}} added a challenge card to an available slot.`, { player: player });
+                } else {
+                    game.message(`{{player}} does not have any empty slots to place this challenge.`, { player: player });
+                }
+            }
+        }),
+
+        // Old challengeCard logic. Remember it also needs referring to in the playerActions definition
+        /*
         addChallengeCard: player => action({
             prompt: 'Add a challenge card to an available slot',
         }).chooseOnBoard(
@@ -250,6 +295,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 game.message(`{{player}} stashed a card and increased their score by 1.`, { player: player });
             }
         }),
+        */
 
         // allow a player to skip their turn by setting their resources to 0
         skip: player => action({
@@ -694,7 +740,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                     if (challengeSlot) {
                         const tokensOnChallenge = challengeSlot.all(Token);
                         tokensOnChallenge.forEach(token => {
-                            token.putInto(player.my('wastedResource')!);
+                            //  token.putInto(player.my('wastedResource')!);
+                            token.putInto(player.my('pool')!); // or tokenSpace ?
                         });
                     }
 
@@ -881,7 +928,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 },
                 // Define the actions the player can take during their turn
                 playerActions({
-                actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'addChallengeCard', 'stashCard', 'skip']
+                actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'playChallenge', 'skip']
                 })
             ]
         })
