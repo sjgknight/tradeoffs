@@ -15,8 +15,8 @@ import {
     Stack,
     Do,
     union,
-    PieceGrid,
-    ConnectedSpaceMap
+    PieceGrid
+  //  ConnectedSpaceMap
 } from '@boardzilla/core';
 
 export class TradeoffsPlayer extends Player<Tradeoffs, TradeoffsPlayer> {
@@ -43,7 +43,7 @@ export class Tradeoffs extends Game<Tradeoffs, TradeoffsPlayer> {
     turnLimit: number = 5;
     handLimit: number = 10;
     poolSize: number = 20;
-    strategyDrawCost: number = 4;
+    strategyDrawCost: number = 0;
     wincondition: number = 10;
     losecondition: number = 10;
 }
@@ -174,6 +174,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         // allow a player to draw additional strategy cards from the strategy deck into their hand (at cost set by strategyDrawCost, currently free/0)
         drawStrategyCard: player => action({
             prompt: 'Draw strategy cards',
+            condition: () => player.resources >= game.strategyDrawCost,
         }).chooseOnBoard(
             'strategyCard', $.strategyDeck.all(StrategyCard), // should this be unquoted StrategyCard or quoted 'strategyCards', I thought the latter, the former is the class (assigned to strategyCards), but it's the former
         ).move(
@@ -194,7 +195,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
         playStrategyCard: player => action({
             prompt: 'Play a strategy card',
         }).chooseOnBoard(
-            'strategyCard', player.my('hand')!.all(StrategyCard),
+            'strategyCard',
+            player.my('hand')!.all(StrategyCard).filter(c => c.cost <= player.resources)
         ).do(({ strategyCard }) => {
             if (player.resources >= strategyCard.cost) {
                 player.resources -= strategyCard.cost;
@@ -299,7 +301,17 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             }
         }),
         */
-
+        // action to add a challenge to hand
+        addChallengetoHand: player => action({
+            prompt: 'Add a challenge from the deck to your hand',
+            condition: () => player.my('hand')!.all(ChallengeCard).length +
+                player.my('hand')!.all(StrategyCard).length < game.handLimit,
+        }).chooseOnBoard(
+            'challengeCard', $.challengeDeck.all(ChallengeCard),
+        ).do(({ challengeCard }) => {
+            challengeCard.putInto(player.my('hand')!);
+            game.message(`{{player}} added a challenge card to their hand.`, { player });
+        }),
         // allow a player to skip their turn by setting their resources to 0
         skip: player => action({
             prompt: 'skip the rest of your turn',
@@ -790,7 +802,8 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
             const wastedTokens = player.my('wastedResource')!.all(Token).length;
 
             // Add wasted tokens to overall damage to track lose condition
-            player.damage += wastedTokens;
+            //player.damage += wastedTokens;
+            player.damage = wastedTokens;
 
             console.log("damage is:", player.damage)
             // Check win/lose conditions
@@ -966,7 +979,7 @@ export default createGame(TradeoffsPlayer, Tradeoffs, game => {
                 },
                 // Define the actions the player can take during their turn
                 playerActions({
-                actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'playChallenge', 'skip']
+                    actions: ['drawStrategyCard', 'playInnovation', 'playStrategyCard', 'playChallenge', 'addChallengetoHand', 'skip']
                 })
             ]
         })
